@@ -193,6 +193,7 @@ html,body{height:100%;margin:0;background:var(--navy);color:var(--fg);font-famil
   <div class="seg" role="group" aria-label="Phương tiện"><button id="vCar">Ô tô</button><button id="vMoto">Xe máy</button></div>
   <div id="ptList"></div>
   <div class="row" style="margin-top:8px"><button class="btn" id="addStop"><b style="font-size:18px">+</b>&nbsp;Thêm điểm dừng</button><button class="btn" id="swapAB">⇅&nbsp;Đổi chiều A, B</button></div>
+  <div id="saveBox" hidden style="margin-top:10px"><label for="saveName">Lưu điểm <span id="saveWhich"></span> với tên gợi nhớ</label><div style="display:flex;gap:6px"><input id="saveName" type="text" placeholder="Ví dụ: Nhà, Cơ quan, Nhà mẹ…" style="flex:1;min-width:0"><button class="btn primary" id="saveOk" style="flex:none;min-height:42px;padding:0 14px;font-size:13px">Lưu</button></div></div>
   <div class="results" id="destResults"></div>
   <div id="routeBox" hidden>
     <div class="routeSum"><b id="rsTime">--</b> · <span id="rsDist">--</span><br><small id="rsTo" style="color:var(--muted)"></small></div>
@@ -240,6 +241,10 @@ html,body{height:100%;margin:0;background:var(--navy);color:var(--fg);font-famil
   <label for="optVol">Âm lượng giọng nói: <span id="volVal">100</span>%</label>
   <input id="optVol" type="range" min="0.2" max="1" step="0.1" value="1">
   <div class="row" style="margin-top:8px"><button class="btn" id="bVoiceTest">Nghe thử giọng</button></div>
+  <label for="optGoong">Mã Goong API (tìm số nhà chính xác, không bắt buộc)</label>
+  <input id="optGoong" type="text" autocomplete="off" placeholder="Dán mã API của goong.io vào đây">
+  <h3 style="margin-top:20px">Địa điểm đã lưu (<span id="placeCount">0</span>)</h3>
+  <div class="list" id="placeList"></div>
   <p style="font-size:11.5px">Trên iPhone có thể tải thêm giọng tiếng Việt tại Cài đặt > Trợ năng > Nội dung được đọc > Giọng nói > Tiếng Việt (ví dụ Linh, giọng Nâng cao). Tải xong mở lại ứng dụng để thấy giọng mới.</p>
   <div class="row"><button class="btn" id="bRefresh">Tải lại dữ liệu</button><button class="btn" id="bGmaps">Mở Google Maps</button></div>
   <h3 style="margin-top:20px">Camera do đồng chí báo (<span id="userCount">0</span>)</h3>
@@ -661,6 +666,7 @@ $('optVol').oninput = () => { opts.vol = +$('optVol').value; LS.set('opts', opts
 $('optRate').onchange = $('optVol').onchange = () => speakTest();
 function speakTest(){ const was = opts.sound; opts.sound = true; initAudio(); speak('Phía trước 300 mét có camera tốc độ, tốc độ giới hạn 50 ki lô mét giờ', true); opts.sound = was; }
 $('bVoiceTest').onclick = speakTest;
+$('optGoong').onchange = () => { opts.goong = $('optGoong').value.trim(); LS.set('opts', opts); toast(opts.goong ? 'Đã lưu mã Goong, tìm địa chỉ sẽ dùng Goong' : 'Đã bỏ mã Goong', true); };
 function renderUserList(){
   $('userCount').textContent = userCams.length;
   $('userList').innerHTML = userCams.length ? '' : '<p>Chưa có điểm nào. Bấm “Báo camera” khi đi qua camera để lưu lại.</p>';
@@ -672,7 +678,7 @@ function renderUserList(){
     d.appendChild(b); $('userList').appendChild(d);
   });
 }
-$('bMenu').onclick = () => { $('optVeh').value=opts.veh; $('optWarn').value=opts.warn; $('optTol').value=opts.tol; $('optArea').value=opts.area; loadVoices(); $('optRate').value=opts.rate||1; $('optVol').value=opts.vol==null?1:opts.vol; showVoiceVals(); renderUserList(); $('menuSheet').hidden = false; };
+$('bMenu').onclick = () => { $('optVeh').value=opts.veh; $('optWarn').value=opts.warn; $('optTol').value=opts.tol; $('optArea').value=opts.area; $('optGoong').value=opts.goong||''; renderPlaces(); loadVoices(); $('optRate').value=opts.rate||1; $('optVol').value=opts.vol==null?1:opts.vol; showVoiceVals(); renderUserList(); $('menuSheet').hidden = false; };
 $('menuClose').onclick = () => { $('menuSheet').hidden = true; };
 ['optVeh','optWarn','optTol','optArea'].forEach(id => $(id).onchange = () => {
   opts.veh=$('optVeh').value; setVeh(opts.veh); opts.warn=+$('optWarn').value; opts.tol=+$('optTol').value; opts.area=$('optArea').value; LS.set('opts', opts); update();
@@ -737,16 +743,35 @@ function renderPts(){
   pts.forEach((p, i) => {
     const row = document.createElement('div'); row.className = 'pt' + (i===ai ? ' active' : '');
     const cls = i===0 ? 'a' : i===pts.length-1 ? 'b' : '';
-    row.innerHTML = `<span class="lt ${cls}">${LET(i)}</span><input type="search" autocomplete="off" enterkeyhint="search" aria-label="${ptLabel(i)}" placeholder="${ptLabel(i)}: gõ tên đường, địa điểm…"><button title="Chọn trên bản đồ" aria-label="Chọn ${ptLabel(i)} trên bản đồ">📍</button>${pts.length>2 && i>0 && i<pts.length-1 ? '<button title="Bỏ điểm này" aria-label="Bỏ điểm dừng">✕</button>' : ''}`;
+    row.innerHTML = `<span class="lt ${cls}">${LET(i)}</span><input type="search" autocomplete="off" enterkeyhint="search" aria-label="${ptLabel(i)}" placeholder="${ptLabel(i)}: gõ tên đường, địa điểm…"><button title="Chọn trên bản đồ" aria-label="Chọn ${ptLabel(i)} trên bản đồ">📍</button>${p && !p.me ? '<button class="star" title="Lưu địa điểm" aria-label="Lưu địa điểm">⭐</button>' : ''}${pts.length>2 && i>0 && i<pts.length-1 ? '<button title="Bỏ điểm này" aria-label="Bỏ điểm dừng">✕</button>' : ''}`;
     const inp = row.querySelector('input'); inp.value = p ? p.name : '';
     inp.onfocus = () => { ai = i; box.querySelectorAll('.pt').forEach((r,k)=>r.classList.toggle('active', k===i)); inp.select(); showSuggest(); };
     inp.oninput = () => { ai = i; pts[i] = null; clearTimeout(qTimer); qTimer = setTimeout(search, 450); };
     inp.onkeydown = e => { if (e.key==='Enter'){ clearTimeout(qTimer); search(); } };
     const bs = row.querySelectorAll('button');
     bs[0].onclick = () => startPick(i);
-    if (bs[1]) bs[1].onclick = () => { pts.splice(i,1); ai = Math.min(ai, pts.length-1); renderPts(); drawPts(); if (ready()) planRoute(); };
+    const st = row.querySelector('.star'); if (st) st.onclick = () => openSave(i);
+    const rm = [...bs].find(x => x.textContent === '✕');
+    if (rm) rm.onclick = () => { pts.splice(i,1); ai = Math.min(ai, pts.length-1); renderPts(); drawPts(); if (ready()) planRoute(); };
     box.appendChild(row);
   });
+}
+let places = LS.get('places', []);
+function savePlaces(){ LS.set('places', places); }
+function renderPlaces(){
+  $('placeCount').textContent = places.length; const box = $('placeList'); box.innerHTML = places.length ? '' : '<p>Chưa có. Khi chọn một điểm trong phần Đi đến, bấm ⭐ để lưu.</p>';
+  places.forEach((pl, k) => { const d = document.createElement('div'); d.innerHTML = `<span>⭐ ${escapeHtml(pl.name)}<br><small style="color:var(--muted)">${escapeHtml(pl.addr||'')}</small></span>`;
+    const b = document.createElement('button'); b.textContent = 'Xoá'; b.onclick = () => { places.splice(k,1); savePlaces(); renderPlaces(); }; d.appendChild(b); box.appendChild(d); });
+}
+let saveIdx = -1;
+function openSave(i){ saveIdx = i; $('saveWhich').textContent = LET(i); $('saveName').value = ''; $('saveBox').hidden = false; setTimeout(()=>$('saveName').focus(), 30); }
+$('saveOk').onclick = () => {
+  const p = pts[saveIdx], nm = $('saveName').value.trim(); if (!p || !nm){ $('saveName').focus(); return; }
+  places = places.filter(x => normVN(x.name) !== normVN(nm)); places.unshift({name:nm, lat:p.lat, lon:p.lon, addr:p.addr || p.name}); savePlaces();
+  pts[saveIdx] = Object.assign({}, p, {name:nm}); $('saveBox').hidden = true; renderPts(); toast('Đã lưu "' + nm + '"', true);
+};
+function placeButtons(box, list){
+  list.forEach(pl => { const b = document.createElement('button'); b.innerHTML = `⭐ ${escapeHtml(pl.name)}<small>${escapeHtml(pl.addr||'')}${pos ? ' · ' + fmtDist(dist(pos, pl)) : ''}</small>`; b.onclick = () => choose({lat:pl.lat, lon:pl.lon, name:pl.name, addr:pl.addr}); box.appendChild(b); });
 }
 function showSuggest(){
   const box = $('destResults'); box.innerHTML = '';
@@ -754,8 +779,10 @@ function showSuggest(){
     const b = document.createElement('button'); b.innerHTML = '🧭 Vị trí của tôi<small>Dùng vị trí GPS hiện tại</small>';
     b.onclick = () => choose({me:true, name:'Vị trí của tôi'}); box.appendChild(b);
   }
+  placeButtons(box, places.slice(0, 8));
 }
 function choose(it){
+  $('saveBox').hidden = true;
   pts[ai] = it; $('destResults').innerHTML = '';
   const next = pts.findIndex(p=>!p); renderPts(); drawPts();
   if (next >= 0){ ai = next; renderPts(); setTimeout(()=>{ const ins = $('ptList').querySelectorAll('input'); ins[next] && ins[next].focus(); }, 30); }
@@ -791,6 +818,7 @@ map.on('click', async e => {
 
 // Tìm địa điểm (Photon, dự phòng Nominatim), ưu tiên quanh vị trí hiện tại
 let qTimer = null, qSeq = 0;
+function normSt(x){ return normVN(x).replace(/^(duong|pho|d\.)\s+/,''); }
 function normVN(x){ return String(x||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/đ/g,'d').replace(/\s+/g,' ').trim(); }
 async function photon(q, c){
   try{
@@ -802,6 +830,14 @@ async function photon(q, c){
       addr: [p.housenumber && p.name ? p.housenumber+' '+(p.street||'') : p.street, p.district || p.locality, p.city || p.county, p.state].filter(Boolean).join(', ')}; });
   }catch(e){ return []; }
 }
+async function goongSearch(q, c){
+  try{ const r = await fetch(`https://rsapi.goong.io/Place/AutoComplete?api_key=${encodeURIComponent(opts.goong)}&input=${encodeURIComponent(q)}&location=${c.lat},${c.lon}&limit=8&more_compound=true`);
+    const j = await r.json(); return (j.predictions||[]).map(x => ({id:x.place_id, name:(x.structured_formatting && x.structured_formatting.main_text) || x.description, addr:(x.structured_formatting && x.structured_formatting.secondary_text) || x.description}));
+  }catch(e){ return []; }
+}
+async function goongDetail(id){
+  try{ const r = await fetch(`https://rsapi.goong.io/Place/Detail?place_id=${encodeURIComponent(id)}&api_key=${encodeURIComponent(opts.goong)}`); const j = await r.json(); const g = j.result && j.result.geometry && j.result.geometry.location; return g ? {lat:g.lat, lon:g.lng} : null; }catch(e){ return null; }
+}
 async function search(){
   const inp = $('ptList').querySelectorAll('input')[ai]; const q = inp ? inp.value.trim() : ''; const box = $('destResults');
   if (q.length < 2){ showSuggest(); return; }
@@ -810,21 +846,38 @@ async function search(){
   // tách số nhà ở đầu: "68Bis Đặng Nguyên Cẩn", "275/12 Hậu Giang", "số 10 Lý Thường Kiệt"
   const m = q.replace(/^s[ốo]\s+/i,'').match(/^(\d+)([a-zA-Z]{0,4}|\/[\d\/]+[a-zA-Z]*)?\s+(.{3,})$/);
   const num = m ? m[1] : null, numFull = m ? m[1] + (m[2]||'') : null, street = m ? m[3].replace(/^(đường|duong|đ\.)\s+/i,'') : null;
+  const nq = normVN(q); const mine = places.filter(pl => normVN(pl.name).includes(nq));
+  if (opts.goong){
+    const g = await goongSearch(q, c);
+    if (seq !== qSeq) return;
+    if (g.length){ box.innerHTML = ''; placeButtons(box, mine); g.forEach(it => { const b = document.createElement('button'); b.innerHTML = `${escapeHtml(it.name)}<small>${escapeHtml(it.addr)}</small>`; b.onclick = async () => { const d = await goongDetail(it.id); if (d) choose(Object.assign(it, d)); else toast('Không lấy được toạ độ, thử lại'); }; box.appendChild(b); });
+      const pk = document.createElement('button'); pk.innerHTML = '📍 Chọn chính xác trên bản đồ<small>Chạm vào đúng vị trí cần đến</small>'; pk.onclick = () => startPick(ai); box.appendChild(pk); return; }
+  }
   const jobs = [photon(q, c)];
   if (m){ jobs.push(photon(street, c)); jobs.push(photon('Hẻm ' + num + ' ' + street, c)); }
   const res = await Promise.all(jobs);
   let items = [];
   if (m){
-    const ns = normVN(street);
+    const ns = normSt(street);
     // 1) đúng số nhà trên bản đồ
-    res.flat().filter(it => it.hn && normVN(it.hn) === normVN(numFull) && normVN(it.street).includes(ns)).forEach(it => items.push(Object.assign(it, {tag:'Đúng số nhà'})));
+    res.flat().filter(it => it.hn && normVN(it.hn) === normVN(numFull) && normSt(it.street).includes(ns)).forEach(it => items.push(Object.assign(it, {tag:'Đúng số nhà'})));
     // 2) đầu hẻm cùng số (hẻm 68 thường nằm sát nhà số 68)
     res.flat().filter(it => { const n = normVN(it.name); return n.includes(ns) && new RegExp('^(hem|kiet|ngo|ngach) ' + num + '([^0-9]|$)').test(n); })
       .forEach(it => items.push(Object.assign({}, it, {name:'≈ Số ' + numFull + ' ' + street, addr:'Gần đầu ' + it.name + (it.area ? ', ' + it.area : ''), tag:'Ước tính theo số hẻm'})));
     // 3) con đường (chưa có số nhà trên bản đồ)
-    res.flat().filter(it => it.key==='highway' && normVN(it.name) === ns).forEach(it => items.push(Object.assign({}, it, {name: it.name, addr:(it.area || '') + ' · bản đồ chưa có số ' + numFull + ', bấm 📍 để chọn đúng nhà'})));
+    // 2b) chưa có hẻm cùng số: nội suy giữa hai hẻm gần nhất cùng chẵn/lẻ
+    if (!items.some(x=>x.tag==='Ước tính theo số hẻm')){
+      const n0 = +num, hs = [];
+      res.flat().forEach(it => { const mm = normVN(it.name).match(/^(?:hem|kiet|ngo|ngach) (\d+)/); if (mm && normSt(it.name.replace(/^(Hẻm|Kiệt|Ngõ|Ngách)\s+[\w\/]+\s+/i,'')) === ns) hs.push({n:+mm[1], it}); });
+      const same = hs.filter(h => h.n % 2 === n0 % 2);
+      const lo = same.filter(h=>h.n<=n0).sort((a,b)=>b.n-a.n)[0], hi = same.filter(h=>h.n>=n0).sort((a,b)=>a.n-b.n)[0];
+      if (lo && hi && lo.n !== hi.n && dist(lo.it, hi.it) < 3000){ const t = (n0-lo.n)/(hi.n-lo.n);
+        items.push({lat:lo.it.lat+(hi.it.lat-lo.it.lat)*t, lon:lo.it.lon+(hi.it.lon-lo.it.lon)*t, name:'≈ Số ' + numFull + ' ' + street, addr:'Ước tính giữa hẻm ' + lo.n + ' và hẻm ' + hi.n + (lo.it.area ? ', ' + lo.it.area : ''), tag:'Ước tính'}); }
+      else if (lo || hi){ const h = lo || hi; if (Math.abs(h.n - n0) <= 40) items.push(Object.assign({}, h.it, {name:'≈ Số ' + numFull + ' ' + street, addr:'Gần ' + h.it.name + ' (ước tính)' + (h.it.area ? ', ' + h.it.area : ''), tag:'Ước tính'})); }
+    }
+    res.flat().filter(it => it.key==='highway' && normSt(it.name) === ns).forEach(it => items.push(Object.assign({}, it, {name: it.name, addr:(it.area || '') + ' · bản đồ chưa có số ' + numFull + ', bấm 📍 để chọn đúng nhà'})));
   }
-  res[0].forEach(it => items.push(it));
+  const cc = c; res[0].slice().sort((x,y) => (dist(cc,x) + (normVN(x.name)===x.name.toLowerCase() && /[^\x00-\x7f]/.test(q) ? 20000 : 0)) - (dist(cc,y) + (normVN(y.name)===y.name.toLowerCase() && /[^\x00-\x7f]/.test(q) ? 20000 : 0))).forEach(it => items.push(it));
   if (!items.length){
     try{
       const r = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&countrycodes=vn&limit=8&accept-language=vi&q=${encodeURIComponent(q)}&viewbox=${c.lon-0.3},${c.lat+0.3},${c.lon+0.3},${c.lat-0.3}`);
@@ -834,9 +887,9 @@ async function search(){
   }
   if (seq !== qSeq) return;
   // gộp các đoạn trùng tên cùng khu vực
-  const seen = new Set(); items = items.filter(it => { const k = normVN(it.name) + '|' + normVN(it.area || it.addr); if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, 8);
-  box.innerHTML = '';
-  if (!items.length) box.innerHTML = '<p>Không tìm thấy. Đồng chí thử ghi rõ hơn, ví dụ thêm tên quận, tỉnh.</p>';
+  const seen = new Set(); items = items.filter(it => { const k = normSt(it.name) + '|' + normVN(it.area || it.addr); if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, 8);
+  box.innerHTML = ''; placeButtons(box, mine);
+  if (!items.length && !mine.length) box.innerHTML = '<p>Không tìm thấy. Đồng chí thử ghi rõ hơn, ví dụ thêm tên quận, tỉnh.</p>';
   items.forEach(it => {
     const b = document.createElement('button');
     const d = pos ? ' · ' + fmtDist(dist(pos, it)) : '';
@@ -1028,7 +1081,7 @@ function hhmm(d){ return d.toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'
 function setStatus(s){ $('status').textContent = s; }
 let toastT = null;
 function toast(s, info){ const t = $('toast'); t.textContent = s; t.className = info ? 'info' : ''; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(()=>t.hidden=true, 3200); }
-$('clock').textContent = hhmm(new Date()); setSoundBtn(); setStatus('Phiên bản 15/11c (sửa bản đồ nền, độ dốc, tìm số nhà). Bấm Bắt đầu hành trình.');
+$('clock').textContent = hhmm(new Date()); setSoundBtn(); setStatus('Phiên bản 15/11d (lưu địa điểm, tìm số nhà, Goong). Bấm Bắt đầu hành trình.');
 window.__app = {map, update, onPos, parseData, drawData, get state(){ return {pos, speedKmh, heading, curLimit, ways:ways.length, cams:cams.length}; }};
 })();
 </script>
