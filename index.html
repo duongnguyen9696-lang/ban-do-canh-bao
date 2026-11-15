@@ -262,14 +262,18 @@ const LS = {
 
 /* ---------- Cấu hình ---------- */
 const OVERPASS = ['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter','https://maps.mail.ru/osm/tools/overpass/api/interpreter','https://overpass.private.coffee/api/interpreter'];
-const LOAD_RADIUS = 2500;      // m, bán kính vùng dữ liệu tải mỗi lần
-const RELOAD_DIST = 1000;      // m, đi xa tâm vùng quá mức này thì tải lại
+const LOAD_RADIUS = 1300;      // m, bán kính vùng dữ liệu tải mỗi lần
+const RELOAD_DIST = 650;       // m, đi xa tâm vùng quá mức này thì tải lại
 const RELOAD_AGE = 10*60e3;    // ms, dữ liệu cũ quá 10 phút thì tải lại
 const opts = Object.assign({veh:'car', warn:500, tol:3, area:'urban', sound:true}, LS.get('opts', {}));
 
 /* ---------- Bản đồ (MapLibre GL, WebGL, có 3D) ---------- */
 const ESRI = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
-const FALLBACK_STYLE = {version:8, glyphs:'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf', sources:{}, layers:[{id:'bg', type:'background', paint:{'background-color':'#0b1a30'}}]};
+const FALLBACK_STYLE = {version:8, sources:{
+    osm:{type:'raster', tiles:['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize:256, maxzoom:19, attribution:'© OpenStreetMap'},
+    esriLabels:{type:'raster', tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}'], tileSize:256, maxzoom:18}},
+  layers:[{id:'bg', type:'background', paint:{'background-color':'#0b1a30'}},{id:'osm', type:'raster', source:'osm'},{id:'esriLabels', type:'raster', source:'esriLabels'}]};
+let styleReady = false;
 let sat = LS.get('base', 0) === 0;          // true: vệ tinh, false: đường phố
 let is3d = LS.get('is3d', true);
 const map = new maplibregl.Map({
@@ -278,13 +282,14 @@ const map = new maplibregl.Map({
   attributionControl:false, fadeDuration:0, antialias:false, renderWorldCopies:false
 });
 map.addControl(new maplibregl.AttributionControl({compact:true, customAttribution:'Ảnh vệ tinh © Esri · Biển báo, camera © OpenStreetMap'}), 'bottom-left');
-let styleTimer = setTimeout(() => { if (!map.isStyleLoaded()){ map.setStyle(FALLBACK_STYLE); sat = true; } }, 12000);
+// chỉ dùng kiểu dự phòng khi máy chủ bản đồ vector không trả lời sau 15 giây
+let styleTimer = setTimeout(() => { if (!styleReady){ map.setStyle(FALLBACK_STYLE); } }, 15000);
 
 function firstLineLayer(){ const ls = map.getStyle().layers; const l = ls.find(x => x.type==='line' || x.type==='symbol' || x.type==='fill-extrusion'); return l && l.id; }
 function setupLayers(){
-  clearTimeout(styleTimer);
+  styleReady = true; clearTimeout(styleTimer);
   if (!map.getSource('esri')) map.addSource('esri', {type:'raster', tiles:[ESRI], tileSize:256, maxzoom:18, attribution:''});
-  if (!map.getLayer('esri')) map.addLayer({id:'esri', type:'raster', source:'esri', paint:{'raster-fade-duration':0}}, firstLineLayer());
+  if (!map.getLayer('esri')) map.addLayer({id:'esri', type:'raster', source:'esri', paint:{'raster-fade-duration':0}}, map.getLayer('esriLabels') ? 'esriLabels' : firstLineLayer());
   // nhà 3D (nếu kiểu bản đồ có nguồn openmaptiles)
   const src = map.getStyle().sources;
   if (src.openmaptiles && !map.getLayer('nha-3d')){
@@ -302,13 +307,14 @@ const fillOrig = new Map();
 function applyBase(){
   if (!map.getLayer('esri')) return;
   map.setLayoutProperty('esri', 'visibility', sat ? 'visible' : 'none');
+  if (map.getLayer('osm')) map.setLayoutProperty('osm', 'visibility', sat ? 'none' : 'visible');
   // ở chế độ vệ tinh: làm mờ vùng tô nền để thấy ảnh, giữ đường và nhãn
   map.getStyle().layers.forEach(l => { if (l.type==='fill'){
     if (!fillOrig.has(l.id)) fillOrig.set(l.id, l.paint && l.paint['fill-opacity']!==undefined ? l.paint['fill-opacity'] : 1);
     try{ map.setPaintProperty(l.id, 'fill-opacity', sat ? 0 : fillOrig.get(l.id)); }catch(e){} } });
 }
-map.on('load', setupLayers);
-map.on('styledata', () => { if (map.isStyleLoaded() && !map.getLayer('esri')) setupLayers(); });
+map.on('style.load', () => { setupLayers(); drawData(); if (plan) drawRoute(plan); drawPts(); });
+map.on('error', e => { if (!styleReady && e && e.error && /styles|Failed to fetch|NetworkError/i.test(String(e.error.message||''))) { clearTimeout(styleTimer); styleTimer = setTimeout(()=>{ if (!styleReady) map.setStyle(FALLBACK_STYLE); }, 3000); } });
 $('layers').onclick = () => { sat = !sat; LS.set('base', sat?0:1); applyBase(); toast(sat ? 'Bản đồ vệ tinh' : 'Bản đồ đường phố', true); };
 function set3dBtn(){ $('mode3d').textContent = is3d ? '2D' : '3D'; }
 $('mode3d').onclick = () => { is3d = !is3d; LS.set('is3d', is3d); set3dBtn(); map.easeTo({pitch: is3d ? 60 : 0, bearing: is3d && heading!=null ? heading : 0, duration:600}); };
@@ -388,21 +394,23 @@ async function loadData(p, force){
   if (loading) return; loading = true; setStatus('Đang tải dữ liệu biển báo, camera…');
   const r = LOAD_RADIUS, dLat = r/110540, dLon = r/(111320*Math.cos(rad(p.lat)));
   const bb = [p.lat-dLat, p.lon-dLon, p.lat+dLat, p.lon+dLon].map(x=>x.toFixed(5)).join(',');
-  const q = `[out:json][timeout:30];(
+  const rc = 4000, cLat = rc/110540, cLon = rc/(111320*Math.cos(rad(p.lat)));
+  const cb = [p.lat-cLat, p.lon-cLon, p.lat+cLat, p.lon+cLon].map(x=>x.toFixed(5)).join(',');
+  const q = `[out:json][timeout:20][maxsize:33554432];(
     way["highway"~"^(motorway|motorway_link|trunk|trunk_link|primary|primary_link|secondary|secondary_link|tertiary|tertiary_link|unclassified|residential|living_street)$"](${bb});
   )->.w;
   .w out tags geom;
-  (node["highway"="speed_camera"](${bb});
-   node["enforcement"](${bb});
-   node["man_made"="surveillance"]["surveillance"="traffic"](${bb});
-   node["man_made"="surveillance"]["surveillance:type"="ALPR"](${bb});
+  (node["highway"="speed_camera"](${cb});
+   node["enforcement"](${cb});
+   node["man_made"="surveillance"]["surveillance"="traffic"](${cb});
+   node["man_made"="surveillance"]["surveillance:type"="ALPR"](${cb});
   )->.c; .c out;
-  relation["type"="enforcement"](${bb})->.e; .e out tags; node(r.e:"device")->.d; .d out;`;
+  relation["type"="enforcement"](${cb})->.e; .e out tags; node(r.e:"device")->.d; .d out;`;
   let data = null, err = null;
   // Gửi song song tới tất cả máy chủ, lấy máy trả lời đầu tiên
   const ctls = OVERPASS.map(()=>new AbortController());
   const tries = OVERPASS.map((url,i) => (async () => {
-    const to = setTimeout(()=>ctls[i].abort(), 25000);
+    const to = setTimeout(()=>ctls[i].abort(), 22000);
     try{
       const res = await fetch(url, {method:'POST', body:'data='+encodeURIComponent(q), headers:{'Content-Type':'application/x-www-form-urlencoded'}, signal:ctls[i].signal});
       if (!res.ok) throw new Error('HTTP '+res.status);
@@ -469,7 +477,6 @@ function drawData(){
     camMarkers.push(new maplibregl.Marker({element:camEl(c)}).setLngLat([c.lon,c.lat]).setPopup(pop).addTo(map));
   });
 }
-map.on('load', () => drawData());
 const escapeHtml = s => String(s).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 
 /* ---------- Vị trí, tốc độ ---------- */
@@ -505,7 +512,7 @@ function update(){
   if (!pos) return;
   // 1. Tốc độ
   $('spd').textContent = Math.round(speedKmh);
-  $('hdg').textContent = heading==null ? '--' : compass(heading);
+  $('hdg').textContent = heading!=null ? compass(heading) : compassHdg!=null ? compass(compassHdg) : '--';
   // 2. Tìm tuyến đường đang đi
   let best = null, bestScore = 1e9;
   for (const w of ways){
@@ -606,20 +613,26 @@ function setSoundBtn(){ $('bSound').classList.toggle('active', opts.sound); $('b
 $('bSound').onclick = () => { opts.sound = !opts.sound; LS.set('opts', opts); setSoundBtn(); if (opts.sound){ initAudio(); speak('Đã bật cảnh báo bằng giọng nói'); } };
 
 /* ---------- Cảm biến: độ dốc, độ nghiêng ---------- */
-let ori = {beta:0, gamma:0}, zero = LS.get('zero', {beta:null, gamma:0});
+let ori = {beta:0, gamma:0}, zero = LS.get('zero2', {beta:null, gamma:0});
+let oriN = 0, sm = {p:0, r:0}, compassHdg = null;
 function onOri(e){
   if (e.beta==null) return;
   ori.beta = e.beta; ori.gamma = e.gamma;
-  const zb = zero.beta==null ? 90 : zero.beta; // mặc định: điện thoại dựng đứng trên giá
-  const pitch = e.beta - zb, roll = e.gamma - zero.gamma;
-  $('slope').textContent = Math.round(Math.tan(rad(Math.max(-60,Math.min(60,pitch))))*100);
-  $('tilt').textContent = Math.round(roll);
+  if (typeof e.webkitCompassHeading === 'number' && e.webkitCompassHeading >= 0) compassHdg = e.webkitCompassHeading;
+  // chưa cân bằng: tự lấy tư thế đặt máy lúc mới mở làm mốc 0
+  if (zero.beta == null){ if (++oriN < 15) return; zero = {beta:e.beta, gamma:e.gamma}; LS.set('zero2', zero); }
+  const pitch = e.beta - zero.beta, roll = e.gamma - zero.gamma;
+  sm.p = sm.p*0.85 + pitch*0.15; sm.r = sm.r*0.85 + roll*0.15;     // làm mượt
+  const slope = Math.tan(rad(Math.max(-25, Math.min(25, sm.p))))*100;  // đường bộ hiếm khi dốc quá 25%
+  $('slope').textContent = Math.round(Math.abs(slope) < 1 ? 0 : slope);
+  $('tilt').textContent = Math.round(Math.max(-45, Math.min(45, sm.r)));
+  if (heading == null && compassHdg != null) $('hdg').textContent = compass(compassHdg);
 }
 async function initSensors(){
   try{ if (typeof DeviceOrientationEvent!=='undefined' && DeviceOrientationEvent.requestPermission){ const r = await DeviceOrientationEvent.requestPermission(); if (r!=='granted') return; } }catch(e){ return; }
   window.addEventListener('deviceorientation', onOri);
 }
-$('bLevel').onclick = () => { zero = {beta:ori.beta, gamma:ori.gamma}; LS.set('zero', zero); toast('Đã cân bằng cảm biến tại vị trí hiện tại', true); };
+$('bLevel').onclick = () => { sm = {p:0, r:0}; zero = {beta:ori.beta, gamma:ori.gamma}; LS.set('zero2', zero); toast('Đã cân bằng cảm biến tại vị trí hiện tại', true); };
 
 /* ---------- Báo camera ---------- */
 let addAt = null;
@@ -778,19 +791,40 @@ map.on('click', async e => {
 
 // Tìm địa điểm (Photon, dự phòng Nominatim), ưu tiên quanh vị trí hiện tại
 let qTimer = null, qSeq = 0;
+function normVN(x){ return String(x||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/đ/g,'d').replace(/\s+/g,' ').trim(); }
+async function photon(q, c){
+  try{
+    const r = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&lat=${c.lat}&lon=${c.lon}&limit=10&bbox=102.1,8.2,109.6,23.4`);
+    const j = await r.json();
+    return (j.features||[]).map(f => { const p = f.properties; return {lat:f.geometry.coordinates[1], lon:f.geometry.coordinates[0],
+      name: p.name || [p.housenumber, p.street].filter(Boolean).join(' ') || q, hn:p.housenumber||'', street:p.street||'', key:p.osm_key, val:p.osm_value,
+      area: [p.district || p.locality, p.city || p.county].filter(Boolean).join(', '),
+      addr: [p.housenumber && p.name ? p.housenumber+' '+(p.street||'') : p.street, p.district || p.locality, p.city || p.county, p.state].filter(Boolean).join(', ')}; });
+  }catch(e){ return []; }
+}
 async function search(){
   const inp = $('ptList').querySelectorAll('input')[ai]; const q = inp ? inp.value.trim() : ''; const box = $('destResults');
   if (q.length < 2){ showSuggest(); return; }
   const seq = ++qSeq; box.innerHTML = '<p>Đang tìm…</p>';
   const c = pos || {lat:map.getCenter().lat, lon:map.getCenter().lng};
+  // tách số nhà ở đầu: "68Bis Đặng Nguyên Cẩn", "275/12 Hậu Giang", "số 10 Lý Thường Kiệt"
+  const m = q.replace(/^s[ốo]\s+/i,'').match(/^(\d+)([a-zA-Z]{0,4}|\/[\d\/]+[a-zA-Z]*)?\s+(.{3,})$/);
+  const num = m ? m[1] : null, numFull = m ? m[1] + (m[2]||'') : null, street = m ? m[3].replace(/^(đường|duong|đ\.)\s+/i,'') : null;
+  const jobs = [photon(q, c)];
+  if (m){ jobs.push(photon(street, c)); jobs.push(photon('Hẻm ' + num + ' ' + street, c)); }
+  const res = await Promise.all(jobs);
   let items = [];
-  try{
-    const r = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&lat=${c.lat}&lon=${c.lon}&limit=8&bbox=102.1,8.2,109.6,23.4`);
-    const j = await r.json();
-    items = (j.features||[]).map(f => { const p = f.properties; return {lat:f.geometry.coordinates[1], lon:f.geometry.coordinates[0],
-      name: p.name || [p.housenumber, p.street].filter(Boolean).join(' ') || q,
-      addr: [p.housenumber && p.name ? p.housenumber+' '+(p.street||'') : p.street, p.district || p.locality, p.city || p.county, p.state].filter(Boolean).join(', ')}; });
-  }catch(e){}
+  if (m){
+    const ns = normVN(street);
+    // 1) đúng số nhà trên bản đồ
+    res.flat().filter(it => it.hn && normVN(it.hn) === normVN(numFull) && normVN(it.street).includes(ns)).forEach(it => items.push(Object.assign(it, {tag:'Đúng số nhà'})));
+    // 2) đầu hẻm cùng số (hẻm 68 thường nằm sát nhà số 68)
+    res.flat().filter(it => { const n = normVN(it.name); return n.includes(ns) && new RegExp('^(hem|kiet|ngo|ngach) ' + num + '([^0-9]|$)').test(n); })
+      .forEach(it => items.push(Object.assign({}, it, {name:'≈ Số ' + numFull + ' ' + street, addr:'Gần đầu ' + it.name + (it.area ? ', ' + it.area : ''), tag:'Ước tính theo số hẻm'})));
+    // 3) con đường (chưa có số nhà trên bản đồ)
+    res.flat().filter(it => it.key==='highway' && normVN(it.name) === ns).forEach(it => items.push(Object.assign({}, it, {name: it.name, addr:(it.area || '') + ' · bản đồ chưa có số ' + numFull + ', bấm 📍 để chọn đúng nhà'})));
+  }
+  res[0].forEach(it => items.push(it));
   if (!items.length){
     try{
       const r = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&countrycodes=vn&limit=8&accept-language=vi&q=${encodeURIComponent(q)}&viewbox=${c.lon-0.3},${c.lat+0.3},${c.lon+0.3},${c.lat-0.3}`);
@@ -799,15 +833,20 @@ async function search(){
     }catch(e){}
   }
   if (seq !== qSeq) return;
-  if (!items.length){ box.innerHTML = '<p>Không tìm thấy. Đồng chí thử ghi rõ hơn, ví dụ thêm tên quận, tỉnh, hoặc bấm 📍 để chọn trên bản đồ.</p>'; return; }
+  // gộp các đoạn trùng tên cùng khu vực
+  const seen = new Set(); items = items.filter(it => { const k = normVN(it.name) + '|' + normVN(it.area || it.addr); if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, 8);
   box.innerHTML = '';
+  if (!items.length) box.innerHTML = '<p>Không tìm thấy. Đồng chí thử ghi rõ hơn, ví dụ thêm tên quận, tỉnh.</p>';
   items.forEach(it => {
     const b = document.createElement('button');
     const d = pos ? ' · ' + fmtDist(dist(pos, it)) : '';
-    b.innerHTML = `${escapeHtml(it.name)}<small>${escapeHtml(it.addr)}${d}</small>`;
-    b.onclick = () => choose(it);
+    b.innerHTML = `${escapeHtml(it.name)}${it.tag ? ' <span style="color:var(--green);font-size:11px">' + escapeHtml(it.tag) + '</span>' : ''}<small>${escapeHtml(it.addr || '')}${d}</small>`;
+    b.onclick = () => choose({lat:it.lat, lon:it.lon, name:it.name, addr:it.addr});
     box.appendChild(b);
   });
+  const pk = document.createElement('button');
+  pk.innerHTML = '📍 Chọn chính xác trên bản đồ<small>Chạm vào đúng vị trí ngôi nhà, cơ quan cần đến</small>';
+  pk.onclick = () => startPick(ai); box.appendChild(pk);
 }
 
 // Giải mã polyline độ chính xác 6 (Valhalla)
@@ -879,8 +918,7 @@ function prepRoute(r){
 function drawRoute(r){
   const data = {type:'FeatureCollection', features: r ? [{type:'Feature', properties:{}, geometry:{type:'LineString', coordinates:r.coords}}] : []};
   if (!map.getSource('route')){
-    if (!map.isStyleLoaded()) return;
-    map.addSource('route', {type:'geojson', data});
+    try{ map.addSource('route', {type:'geojson', data}); }catch(e){ return; }
     map.addLayer({id:'route-case', type:'line', source:'route', layout:{'line-cap':'round','line-join':'round'}, paint:{'line-color':'#0b4fb3','line-width':['interpolate',['linear'],['zoom'],12,6,18,16]}});
     map.addLayer({id:'route', type:'line', source:'route', layout:{'line-cap':'round','line-join':'round'}, paint:{'line-color':'#3b8cff','line-width':['interpolate',['linear'],['zoom'],12,4,18,11]}});
   } else map.getSource('route').setData(data);
@@ -970,7 +1008,6 @@ function navTick(){
   if (!said.near && dm <= Math.max(40, spd*4)){ said.near = true; speak(m.text + (nx && (nx.at - m.at) < 150 ? ', sau đó ' + nx.text.toLowerCase() : '')); }
   nav.said[key] = said;
 }
-map.on('load', () => { if (plan) drawRoute(plan); drawPts(); });
 
 /* ---------- Khởi động ---------- */
 let wakeLock = null;
@@ -991,7 +1028,7 @@ function hhmm(d){ return d.toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'
 function setStatus(s){ $('status').textContent = s; }
 let toastT = null;
 function toast(s, info){ const t = $('toast'); t.textContent = s; t.className = info ? 'info' : ''; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(()=>t.hidden=true, 3200); }
-$('clock').textContent = hhmm(new Date()); setSoundBtn(); setStatus('Phiên bản 15/11b (3D, chỉ đường A-B, điểm dừng). Bấm Bắt đầu hành trình.');
+$('clock').textContent = hhmm(new Date()); setSoundBtn(); setStatus('Phiên bản 15/11c (sửa bản đồ nền, độ dốc, tìm số nhà). Bấm Bắt đầu hành trình.');
 window.__app = {map, update, onPos, parseData, drawData, get state(){ return {pos, speedKmh, heading, curLimit, ways:ways.length, cams:cams.length}; }};
 })();
 </script>
