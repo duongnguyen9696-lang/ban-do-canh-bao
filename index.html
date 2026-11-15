@@ -921,6 +921,9 @@ function startNav(){
   followCam(true); initAudio();
   const last = plan.pts[plan.pts.length-1];
   speak('Bắt đầu chỉ đường đến ' + last.name + (plan.pts.length > 2 ? ', qua ' + (plan.pts.length-2) + ' điểm dừng' : '') + '. Quãng đường ' + sayDist(plan.totalM) + ', khoảng ' + fmtTime(plan.totalS));
+  const m0 = plan.mans[1] || plan.mans[0];
+  $('navArrow').innerHTML = arrowSvg(m0.type); $('navDist').textContent = fmtDist(m0.at); $('navText').textContent = pos ? m0.text : 'Chờ vị trí GPS… ' + m0.text; $('navThen').textContent = '';
+  $('navRemain').textContent = fmtTime(plan.totalS) + ' · ' + fmtDist(plan.totalM); $('navEta').textContent = 'Dự kiến đến lúc ' + hhmm(new Date(Date.now() + plan.totalS*1000));
   if (!nav.joined && pos && dist(pos, plan.pts[0]) > 300) toast('Lộ trình bắt đầu từ điểm A. Khi đồng chí tới gần lộ trình, chỉ đường sẽ tự bám theo.', true);
   navTick();
 }
