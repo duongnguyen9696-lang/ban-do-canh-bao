@@ -49,6 +49,8 @@ html,body{height:100%;margin:0;background:var(--navy);color:var(--fg);font-famil
 .sign small{position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);font-size:9.5px;color:var(--muted);white-space:nowrap}
 .sign.flash{animation:flash .6s infinite alternate}
 @keyframes flash{to{box-shadow:0 0 0 8px rgba(255,70,40,.55)}}
+#bans{display:flex;flex-wrap:wrap;gap:4px;margin:3px 0}
+#bans span{display:inline-flex;align-items:center;gap:3px;background:#fff;color:#b3261e;border:2px solid #c8371f;border-radius:12px;padding:1px 7px;font:700 11px var(--f-body)}
 .cam{min-width:76px;text-align:center;opacity:.35;transition:opacity .2s}
 .cam.on{opacity:1}
 .cam .ico{width:52px;height:52px;margin:0 auto;background:var(--blue);border:2px solid #fff;display:grid;place-items:center}
@@ -141,7 +143,7 @@ html,body{height:100%;margin:0;background:var(--navy);color:var(--fg);font-famil
 <div id="hud">
   <div>
     <div class="speed" id="speedBox"><b id="spd">0</b><span>km/h</span></div>
-    <div class="meta"><span class="road" id="road">Chưa xác định tuyến đường</span><span id="clock">--:--</span> · <span id="gpsAcc">GPS: chờ</span></div>
+    <div class="meta"><span class="road" id="road">Chưa xác định tuyến đường</span><span id="bans"></span><span id="clock">--:--</span> · <span id="gpsAcc">GPS: chờ</span></div>
   </div>
   <div class="cam" id="camBox" aria-live="polite">
     <div class="ico"><svg viewBox="0 0 24 24" width="32" height="32" fill="#fff"><path d="M3 8.5 15.5 4l2 5.2-12.4 4.6zM16.2 10.6l2.3-.9 1.6 4.1-2.3.9zM6 14.3l2 .7-.6 1.7H4v3H2v-7h2v2.3z"/></svg></div>
@@ -232,6 +234,8 @@ html,body{height:100%;margin:0;background:var(--navy);color:var(--fg);font-famil
   <select id="optWarn"><option value="300">300 m</option><option value="500" selected>500 m</option><option value="800">800 m</option><option value="1000">1.000 m</option></select>
   <label for="optTol">Báo vượt tốc khi vượt quá giới hạn</label>
   <select id="optTol"><option value="0">Ngay khi vượt</option><option value="3" selected>3 km/h</option><option value="5">5 km/h</option></select>
+  <label style="display:flex;align-items:center;gap:8px;color:var(--fg);font-size:13.5px"><input type="checkbox" id="optBanTurn" style="width:auto"> Nhắc cấm rẽ, cấm quay đầu ở ngã ba, ngã tư</label>
+  <label style="display:flex;align-items:center;gap:8px;color:var(--fg);font-size:13.5px"><input type="checkbox" id="optBanPark" style="width:auto"> Nhắc đoạn đường cấm dừng, cấm đỗ</label>
   <label for="optArea">Khu vực khi đường chưa có biển trên dữ liệu</label>
   <select id="optArea"><option value="urban">Trong khu đông dân cư</option><option value="rural">Ngoài khu đông dân cư</option></select>
   <label for="optVoice">Giọng nói cảnh báo</label>
@@ -270,7 +274,7 @@ const OVERPASS = ['https://overpass-api.de/api/interpreter','https://overpass.ku
 const LOAD_RADIUS = 1300;      // m, bán kính vùng dữ liệu tải mỗi lần
 const RELOAD_DIST = 650;       // m, đi xa tâm vùng quá mức này thì tải lại
 const RELOAD_AGE = 10*60e3;    // ms, dữ liệu cũ quá 10 phút thì tải lại
-const opts = Object.assign({veh:'car', warn:500, tol:3, area:'urban', sound:true}, LS.get('opts', {}));
+const opts = Object.assign({veh:'car', warn:500, tol:3, area:'urban', sound:true, banTurn:true, banPark:true}, LS.get('opts', {}));
 
 /* ---------- Bản đồ (MapLibre GL, WebGL, có 3D) ---------- */
 const ESRI = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
@@ -410,7 +414,9 @@ async function loadData(p, force){
    node["man_made"="surveillance"]["surveillance"="traffic"](${cb});
    node["man_made"="surveillance"]["surveillance:type"="ALPR"](${cb});
   )->.c; .c out;
-  relation["type"="enforcement"](${cb})->.e; .e out tags; node(r.e:"device")->.d; .d out;`;
+  relation["type"="enforcement"](${cb})->.e; .e out tags; node(r.e:"device")->.d; .d out;
+  relation["type"="restriction"](${bb})->.rs; .rs out body; node(r.rs:"via")->.v; .v out skel;
+  node["traffic_sign"](${bb})->.ts; .ts out;`;
   let data = null, err = null;
   // Gửi song song tới tất cả máy chủ, lấy máy trả lời đầu tiên
   const ctls = OVERPASS.map(()=>new AbortController());
@@ -443,10 +449,20 @@ function parseData(d){
   ways = els.filter(e => e.type==='way' && e.geometry && e.geometry.length>1);
   const nodes = new Map(); els.filter(e=>e.type==='node').forEach(n=>nodes.set(n.id,n));
   const relDev = new Map();
-  els.filter(e=>e.type==='relation').forEach(r => {
+  restrictions = []; signs = [];
+  els.filter(e=>e.type==='relation' && e.tags && e.tags.type==='restriction').forEach(r => {
+    const t = r.tags, kind = (opts.veh==='moto' ? t['restriction:motorcycle'] : t['restriction:motorcar']) || t.restriction;
+    if (!kind || !BAN_TXT[kind]) return;
+    const ex = String(t.except||''); if ((opts.veh==='moto' && /motorcycle|moped/.test(ex)) || (opts.veh==='car' && /motorcar/.test(ex))) return;
+    const mem = r.members||[], from = mem.find(m=>m.role==='from' && m.type==='way'), via = mem.find(m=>m.role==='via' && m.type==='node'), to = mem.find(m=>m.role==='to' && m.type==='way');
+    if (from && via) restrictions.push({id:'r'+r.id, kind, from:from.ref, via:via.ref, to: to && to.ref});
+  });
+  els.filter(e=>e.type==='node' && e.tags && e.tags.traffic_sign).forEach(n => { const k = signKind(n.tags.traffic_sign); if (k) signs.push({id:'s'+n.id, lat:n.lat, lon:n.lon, kind:k, dir:parseFloat(n.tags.direction)}); });
+  els.filter(e=>e.type==='relation' && !(e.tags && e.tags.type==='restriction')).forEach(r => {
     const en = r.tags && r.tags.enforcement || 'check';
     (r.members||[]).forEach(m => { if (m.type==='node' && m.role==='device') relDev.set(m.ref, {en, maxspeed:r.tags.maxspeed}); });
   });
+  restrictions.forEach(rs => { const n = nodes.get(rs.via); if (n){ rs.lat = n.lat; rs.lon = n.lon; } }); restrictions = restrictions.filter(rs => rs.lat != null);
   cams = [];
   nodes.forEach(n => {
     const t = n.tags || {}; const rel = relDev.get(n.id);
@@ -460,6 +476,42 @@ function parseData(d){
     const dir = parseFloat(t.direction || t['camera:direction']);
     cams.push({id:'osm'+n.id, lat:n.lat, lon:n.lon, type, dir: isNaN(dir)?null:dir, limit: parseSpeed(t.maxspeed || (rel&&rel.maxspeed)), src:'osm'});
   });
+}
+const BAN_TXT = {no_u_turn:'cấm quay đầu', no_left_turn:'cấm rẽ trái', no_right_turn:'cấm rẽ phải', no_straight_on:'cấm đi thẳng', only_straight_on:'chỉ được đi thẳng', only_left_turn:'chỉ được rẽ trái', only_right_turn:'chỉ được rẽ phải', only_u_turn:'chỉ được quay đầu'};
+const BAN_ICO = {no_u_turn:'⤺̸', no_left_turn:'↰̸', no_right_turn:'↱̸', no_straight_on:'↑̸', only_straight_on:'↑', only_left_turn:'↰', only_right_turn:'↱', only_u_turn:'⤺', no_stopping:'⊘', no_parking:'Ⓟ̸'};
+function signKind(v){ v = String(v).toUpperCase();
+  if (/P\.?130/.test(v)) return 'no_stopping'; if (/P\.?131/.test(v)) return 'no_parking';
+  if (/P\.?124[AC]?/.test(v)) return 'no_u_turn'; if (/P\.?123A/.test(v)) return 'no_left_turn'; if (/P\.?123B/.test(v)) return 'no_right_turn'; return null; }
+function wayParking(w){
+  const t = w.tags, vals = ['parking:both','parking:left','parking:right','parking:both:restriction','parking:left:restriction','parking:right:restriction','parking:lane:both','parking:lane:left','parking:lane:right','parking:condition:both'].map(k=>t[k]).filter(Boolean).join(' ');
+  if (/no_stopping/.test(vals)) return 'no_stopping'; if (/no_parking/.test(vals) || /(^| )no( |$)/.test(vals)) return 'no_parking'; return null;
+}
+let restrictions = [], signs = [], banSaid = {}, lastParkWay = null;
+function checkBans(){
+  const chips = [];
+  if (!pos){ $('bans').innerHTML = ''; return; }
+  // cấm rẽ / quay đầu tại giao lộ phía trước
+  if (opts.banTurn !== false && curWay){
+    let nb = null;
+    restrictions.forEach(rs => { if (rs.from !== curWay.id) return; const d = dist(pos, rs); if (d > 250) return;
+      if (heading != null && speedKmh > 5 && d > 15 && angDiff(bearing(pos, rs), heading) > 50) return; if (!nb || d < nb.d) nb = Object.assign({d}, rs); });
+    signs.forEach(sg => { if (sg.kind==='no_stopping' || sg.kind==='no_parking') return; const d = dist(pos, sg); if (d > 120) return;
+      if (heading != null && speedKmh > 5 && angDiff(bearing(pos, sg), heading) > 45) return; if (!isNaN(sg.dir) && heading != null && angDiff((sg.dir+180)%360, heading) > 60) return; if (!nb || d < nb.d) nb = Object.assign({d}, sg); });
+    if (nb){
+      chips.push(BAN_ICO[nb.kind] + ' ' + BAN_TXT[nb.kind].replace(/^./, x=>x.toUpperCase()));
+      if (!banSaid[nb.id] && nb.d <= 180){ banSaid[nb.id] = 1; speak('Giao lộ phía trước ' + BAN_TXT[nb.kind]); }
+    }
+  }
+  // cấm dừng, cấm đỗ trên đoạn đường đang đi
+  if (opts.banPark !== false){
+    let pk = curWay ? wayParking(curWay) : null;
+    signs.forEach(sg => { if ((sg.kind==='no_stopping' || sg.kind==='no_parking') && dist(pos, sg) < 60) pk = pk === 'no_stopping' ? pk : sg.kind; });
+    if (pk){ chips.push(pk==='no_stopping' ? '⊘ Cấm dừng, đỗ' : 'Ⓟ̸ Cấm đỗ');
+      const key = (curWay ? curWay.id : 'x') + pk; if (lastParkWay !== key){ lastParkWay = key; speak(pk==='no_stopping' ? 'Đoạn đường cấm dừng và đỗ xe' : 'Đoạn đường cấm đỗ xe'); } }
+    else lastParkWay = null;
+  }
+  for (const k in banSaid){ const r = restrictions.find(x=>x.id===k) || signs.find(x=>x.id===k); if (!r || dist(pos, r) > 400) delete banSaid[k]; }
+  $('bans').innerHTML = chips.map(c=>'<span>'+escapeHtml(c)+'</span>').join('');
 }
 function camEl(c){
   const cls = c.src==='user' ? 'user' : (c.type==='traffic_signals' ? 'red' : '');
@@ -541,6 +593,7 @@ function update(){
     if (lim.v !== lastLimitSpoken && lim.src==='biển báo'){ if (lastLimitSpoken!==null) speak('Giới hạn tốc độ ' + lim.v + ' ki lô mét giờ'); lastLimitSpoken = lim.v; }
   } else { $('lim').textContent = '--'; $('limSrc').textContent = 'chưa có dữ liệu'; $('sign').classList.add('none'); }
   curLimit = lim ? lim.v : null;
+  checkBans();
   // 3. Camera phía trước
   let near = null;
   for (const c of allCams()){
@@ -666,6 +719,8 @@ $('optVol').oninput = () => { opts.vol = +$('optVol').value; LS.set('opts', opts
 $('optRate').onchange = $('optVol').onchange = () => speakTest();
 function speakTest(){ const was = opts.sound; opts.sound = true; initAudio(); speak('Phía trước 300 mét có camera tốc độ, tốc độ giới hạn 50 ki lô mét giờ', true); opts.sound = was; }
 $('bVoiceTest').onclick = speakTest;
+$('optBanTurn').onchange = () => { opts.banTurn = $('optBanTurn').checked; LS.set('opts', opts); update(); };
+$('optBanPark').onchange = () => { opts.banPark = $('optBanPark').checked; LS.set('opts', opts); update(); };
 $('optGoong').onchange = () => { opts.goong = $('optGoong').value.trim(); LS.set('opts', opts); toast(opts.goong ? 'Đã lưu mã Goong, tìm địa chỉ sẽ dùng Goong' : 'Đã bỏ mã Goong', true); };
 function renderUserList(){
   $('userCount').textContent = userCams.length;
@@ -678,7 +733,7 @@ function renderUserList(){
     d.appendChild(b); $('userList').appendChild(d);
   });
 }
-$('bMenu').onclick = () => { $('optVeh').value=opts.veh; $('optWarn').value=opts.warn; $('optTol').value=opts.tol; $('optArea').value=opts.area; $('optGoong').value=opts.goong||''; renderPlaces(); loadVoices(); $('optRate').value=opts.rate||1; $('optVol').value=opts.vol==null?1:opts.vol; showVoiceVals(); renderUserList(); $('menuSheet').hidden = false; };
+$('bMenu').onclick = () => { $('optVeh').value=opts.veh; $('optWarn').value=opts.warn; $('optTol').value=opts.tol; $('optArea').value=opts.area; $('optBanTurn').checked=opts.banTurn!==false; $('optBanPark').checked=opts.banPark!==false; $('optGoong').value=opts.goong||''; renderPlaces(); loadVoices(); $('optRate').value=opts.rate||1; $('optVol').value=opts.vol==null?1:opts.vol; showVoiceVals(); renderUserList(); $('menuSheet').hidden = false; };
 $('menuClose').onclick = () => { $('menuSheet').hidden = true; };
 ['optVeh','optWarn','optTol','optArea'].forEach(id => $(id).onchange = () => {
   opts.veh=$('optVeh').value; setVeh(opts.veh); opts.warn=+$('optWarn').value; opts.tol=+$('optTol').value; opts.area=$('optArea').value; LS.set('opts', opts); update();
@@ -1088,7 +1143,7 @@ function hhmm(d){ return d.toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'
 function setStatus(s){ $('status').textContent = s; }
 let toastT = null;
 function toast(s, info){ const t = $('toast'); t.textContent = s; t.className = info ? 'info' : ''; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(()=>t.hidden=true, 3200); }
-$('clock').textContent = hhmm(new Date()); setSoundBtn(); setStatus('Phiên bản 15/11d (lưu địa điểm, tìm số nhà, Goong). Bấm Bắt đầu hành trình.');
+$('clock').textContent = hhmm(new Date()); setSoundBtn(); setStatus('Phiên bản 15/11e (nhắc biển cấm rẽ, quay đầu, dừng đỗ). Bấm Bắt đầu hành trình.');
 window.__app = {map, update, onPos, parseData, drawData, get state(){ return {pos, speedKmh, heading, curLimit, ways:ways.length, cams:cams.length}; }};
 })();
 </script>
