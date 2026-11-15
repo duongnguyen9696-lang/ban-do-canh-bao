@@ -30,6 +30,15 @@ html,body{height:100%;margin:0;background:var(--navy);color:var(--fg);font-famil
 .maplibregl-ctrl-bottom-left,.maplibregl-ctrl-bottom-right{bottom:calc(var(--sb) + 130px)}
 .maplibregl-popup-content{background:#13294a;color:var(--fg);font:13px var(--f-body);border-radius:10px}
 .maplibregl-popup-tip{border-top-color:#13294a!important;border-bottom-color:#13294a!important}
+#poiBtn{position:fixed;right:max(12px,calc(var(--sr) + 12px));bottom:calc(var(--sb) + 318px);z-index:1000;width:48px;height:48px;border-radius:50%;border:none;background:#fff;color:#1a73e8;box-shadow:0 3px 10px rgba(0,0,0,.4);font-size:22px;cursor:pointer}
+#poiBtn.on{background:#1a73e8;color:#fff}
+.poiMk{width:30px;height:30px;border-radius:50%;background:#fff;border:2px solid #1a73e8;display:grid;place-items:center;font-size:16px;box-shadow:0 2px 6px rgba(0,0,0,.45);cursor:pointer}
+.poiGrid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+.poiGrid label{display:flex!important;align-items:center;gap:8px;margin:0!important;padding:10px;border:1px solid var(--line);border-radius:10px;background:#0c1d36;color:var(--fg)!important;font-size:13.5px!important}
+.poiGrid input{width:auto}
+.popBtns{display:flex;gap:6px;margin-top:8px}
+.popBtns button{flex:1;border:none;border-radius:8px;padding:8px 6px;font:700 12px var(--f-body);color:#fff;background:#1f8a4c;cursor:pointer}
+.popBtns button+button{background:#2f6fd6}
 #mode3d{position:fixed;right:max(12px,calc(var(--sr) + 12px));bottom:calc(var(--sb) + 262px);z-index:1000;width:48px;height:48px;border-radius:50%;border:none;background:#fff;color:#1a73e8;box-shadow:0 3px 10px rgba(0,0,0,.4);font:800 15px var(--f-body);cursor:pointer}
 
 /* Bảng điều khiển trên cùng (kiểu đồng hồ) */
@@ -73,11 +82,43 @@ html,body{height:100%;margin:0;background:var(--navy);color:var(--fg);font-famil
 
 #recenter{position:fixed;right:max(12px,calc(var(--sr) + 12px));bottom:calc(var(--sb) + 150px);z-index:1000;width:48px;height:48px;border-radius:50%;border:none;background:#fff;color:#1a73e8;box-shadow:0 3px 10px rgba(0,0,0,.4);display:grid;place-items:center;cursor:pointer}
 #recenter.off{color:#888}
+#recenter{touch-action:none}
+#recenter::after{content:'';position:absolute;bottom:3px;left:50%;width:14px;height:3px;margin-left:-7px;border-radius:2px;background:#e53935;opacity:.8}
+#dragPin{position:fixed;left:0;top:0;z-index:2500;pointer-events:none;transform:translate(-50%,-100%);filter:drop-shadow(0 4px 6px rgba(0,0,0,.5))}
+#dragPin::after{content:'';position:absolute;left:50%;bottom:-4px;width:8px;height:8px;margin-left:-4px;border-radius:50%;background:rgba(0,0,0,.45)}
+#dropCard{position:fixed;left:max(10px,calc(var(--sl) + 10px));right:max(10px,calc(var(--sr) + 10px));bottom:calc(var(--sb) + 84px);z-index:1600;background:#fff;color:#222;border-radius:16px;padding:12px 14px;box-shadow:0 6px 22px rgba(0,0,0,.45);max-width:520px;margin:0 auto}
+#dropCard h4{margin:0 26px 2px 0;font:800 16px var(--f-body);color:#111}
+#dropCard p{margin:0;color:#555;font-size:12.5px}
+#dropCard .x{position:absolute;right:8px;top:6px;border:none;background:none;font-size:20px;color:#777;padding:4px 8px}
+#dropCard .db{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+#dropCard .db button{flex:1 1 auto;border:none;border-radius:10px;padding:10px 8px;font:700 13px var(--f-body);background:#eef2f7;color:#1a3d6e;min-height:42px}
+#dropCard .db button.go{background:#1a73e8;color:#fff;flex-basis:100%;font-size:15px}
+#dropCard .sv{display:flex;gap:6px;margin-top:8px}
+#dropCard .sv input{flex:1;min-width:0;border:1px solid #ccd;border-radius:9px;padding:8px 10px;font-size:15px}
+#dropCard .sv button{border:none;border-radius:9px;background:#1a73e8;color:#fff;font-weight:700;padding:0 14px}
+.dropMk{filter:drop-shadow(0 3px 4px rgba(0,0,0,.5))}
+#trafBtn{position:fixed;right:max(12px,calc(var(--sr) + 12px));bottom:calc(var(--sb) + 374px);z-index:1000;width:48px;height:48px;border-radius:50%;border:none;background:#fff;box-shadow:0 3px 10px rgba(0,0,0,.4);font-size:22px;cursor:pointer;opacity:.55}
+#trafBtn.on{opacity:1;outline:3px solid #2e7d32}
+#trafAlert{position:fixed;left:max(10px,calc(var(--sl) + 10px));right:max(10px,calc(var(--sr) + 10px));top:calc(var(--st) + 200px);z-index:1700;background:#fff7e0;color:#3a2a00;border:2px solid #f0a500;border-radius:14px;padding:10px 12px;box-shadow:0 6px 20px rgba(0,0,0,.45);max-width:520px;margin:0 auto;font-size:14px}
+#trafAlert b{display:block;font-size:15px;margin-bottom:2px}
+#trafAlert .db{display:flex;gap:6px;margin-top:8px}
+#trafAlert .db button{flex:1;border:none;border-radius:10px;padding:10px;font:700 14px var(--f-body);background:#e8e8e8;color:#333}
+#trafAlert .db button.go{background:#2e7d32;color:#fff}
+.incMk{width:28px;height:28px;border-radius:50%;background:#fff;border:2px solid #e53935;display:grid;place-items:center;font-size:15px;box-shadow:0 2px 6px rgba(0,0,0,.4)}
 #layers{position:fixed;right:max(12px,calc(var(--sr) + 12px));bottom:calc(var(--sb) + 206px);z-index:1000;width:48px;height:48px;border-radius:50%;border:none;background:#fff;color:#333;box-shadow:0 3px 10px rgba(0,0,0,.4);display:grid;place-items:center;cursor:pointer}
 
 /* Cửa sổ */
 .sheet{position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center}
 .sheet[hidden]{display:none}
+.grp{border:1px solid var(--line);border-radius:12px;margin:8px 0;background:rgba(255,255,255,.04)}
+.grp summary{list-style:none;cursor:pointer;padding:13px 44px 13px 14px;font:700 15px var(--f-body);color:var(--fg);position:relative}
+.grp summary::-webkit-details-marker{display:none}
+.grp summary::after{content:'+';position:absolute;right:12px;top:50%;transform:translateY(-50%);width:26px;height:26px;border-radius:50%;background:#1a73e8;color:#fff;display:grid;place-items:center;font:800 18px/1 var(--f-body)}
+.grp[open] summary::after{content:'−';background:#5a6b85}
+.grp .gb{padding:0 14px 12px}
+.ck{display:flex!important;align-items:center;gap:8px;color:var(--fg)!important;font-size:13.5px!important}
+.ck input{width:auto!important}
+.menuFoot{position:sticky;bottom:calc(-1 * (var(--sb) + 18px));background:#13294a;padding:10px 0 calc(var(--sb) + 4px);margin-top:10px}
 .sheet .box{background:#13294a;width:100%;max-width:520px;border-radius:18px 18px 0 0;padding:18px max(16px,var(--sr)) calc(var(--sb) + 18px) max(16px,var(--sl));max-height:85vh;overflow:auto}
 .sheet h3{margin:0 0 10px;font-size:17px}
 .sheet p{font-size:13px;color:var(--muted);line-height:1.5;margin:6px 0}
@@ -89,7 +130,9 @@ html,body{height:100%;margin:0;background:var(--navy);color:var(--fg);font-famil
 .list div{display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)}
 .list button{background:none;border:1px solid #a33;color:#f88;border-radius:8px;padding:2px 8px;font-size:12px}
 
-#searchPill{position:fixed;left:max(12px,calc(var(--sl) + 12px));right:max(12px,calc(var(--sr) + 12px));top:calc(var(--st) + 128px);z-index:999;display:flex;align-items:center;gap:10px;background:#fff;color:#444;border:none;border-radius:26px;padding:12px 16px;font:500 15px var(--f-body);box-shadow:0 3px 12px rgba(0,0,0,.35);cursor:pointer;text-align:left}
+#searchPill{position:fixed;left:max(12px,calc(var(--sl) + 12px));top:calc(var(--st) + 128px);z-index:999;width:52px;height:52px;display:grid;place-items:center;background:#fff;border:none;border-radius:50%;padding:0;box-shadow:0 3px 12px rgba(0,0,0,.4);cursor:pointer}
+#searchPill span{display:none}
+#searchPill:active{transform:scale(.92)}
 #searchPill svg{flex:none}
 #navBan{position:fixed;left:max(10px,calc(var(--sl) + 10px));right:max(10px,calc(var(--sr) + 10px));top:calc(var(--st) + 124px);z-index:999;display:flex;align-items:center;gap:12px;background:#0d6e3f;color:#fff;border-radius:16px;padding:10px 14px;box-shadow:0 4px 14px rgba(0,0,0,.4)}
 #navBan .arrow{width:48px;height:48px;flex:none;display:grid;place-items:center}
@@ -154,6 +197,8 @@ html,body{height:100%;margin:0;background:var(--navy);color:var(--fg);font-famil
 </div>
 
 <button id="layers" aria-label="Đổi lớp bản đồ" title="Đổi lớp bản đồ"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/></svg></button>
+<button id="trafBtn" aria-label="Lớp kẹt xe" title="Tình trạng giao thông">🚦</button>
+<button id="poiBtn" aria-label="Địa điểm gần đây" title="Ngân hàng, cây xăng, quán ăn gần đây">🏪</button>
 <button id="mode3d" aria-label="Đổi 2D hoặc 3D" title="Đổi 2D, 3D">3D</button>
 <button id="recenter" aria-label="Về vị trí của tôi" title="Bám theo vị trí"><svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor"><path d="M12 2 4.5 20.3l.7.7L12 18l6.8 3 .7-.7z"/></svg></button>
 
@@ -174,9 +219,14 @@ html,body{height:100%;margin:0;background:var(--navy);color:var(--fg);font-famil
   <div id="status">Đang khởi động…</div>
 </div>
 
-<button id="searchPill" aria-label="Tìm điểm đến"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#1a73e8" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><span>Đi đến đâu? Tìm điểm đến</span></button>
+<button id="searchPill" aria-label="Tìm điểm đến" title="Tìm điểm đến"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#1a73e8" stroke-width="2.6"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><span>Đi đến đâu? Tìm điểm đến</span></button>
 <div id="navBan" hidden><div class="arrow" id="navArrow"></div><div style="min-width:0"><b id="navDist">--</b><span id="navText">--</span><span class="then" id="navThen"></span></div></div>
 <div id="navInfo" hidden><div><b id="navRemain">--</b><small id="navEta">--</small></div><div style="display:flex;gap:6px"><button id="navMute" style="background:#2f6fd6">Lộ trình</button><button id="navStop">Kết thúc</button></div></div>
+<div id="dragPin" hidden><svg viewBox="0 0 24 24" width="44" height="44"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z" fill="#e53935" stroke="#fff" stroke-width="1.5"/><circle cx="12" cy="9" r="2.6" fill="#fff"/></svg></div>
+<div id="dropCard" hidden><button class="x" id="dropX" aria-label="Đóng">✕</button><h4 id="dropName">Đang tìm địa chỉ…</h4><p id="dropAddr"></p><p id="dropDist"></p>
+<div class="db"><button class="go" id="dropGo">🚗 Đi đến đây ngay</button><button id="dropStop">➕ Thêm điểm dừng</button><button id="dropSave">⭐ Lưu</button><button id="dropCam">📷 Báo camera</button></div>
+<div class="sv" id="dropSv" hidden><input id="dropSvName" type="text" placeholder="Tên gợi nhớ: Nhà, Cơ quan…"><button id="dropSvOk">Lưu</button></div></div>
+<div id="trafAlert" hidden><b id="trafTitle"></b><span id="trafText"></span><div class="db" id="trafBtns"><button class="go" id="trafYes">Đổi đường</button><button id="trafNo">Giữ đường cũ</button></div></div>
 <div id="pickHint" hidden><span id="pickText">Chạm vào bản đồ để chọn điểm</span><button id="pickCancel">Huỷ</button></div>
 <div id="toast" hidden></div>
 
@@ -202,6 +252,17 @@ html,body{height:100%;margin:0;background:var(--navy);color:var(--fg);font-famil
     <div class="steps" id="rsSteps"></div>
   </div>
   <div class="row"><button class="btn" id="routeClose">Đóng</button><button class="btn primary" id="routeGo" hidden>Bắt đầu đi</button></div>
+  <div class="row" id="gmTrafRow" hidden><button class="btn" id="gmTraf">🚦 Xem kẹt xe, tai nạn trên Google Maps</button></div>
+</div></div>
+
+<!-- Địa điểm gần đây -->
+<div class="sheet" id="poiSheet" hidden><div class="box">
+  <h3>Gần đây</h3>
+  <p>Tích vào loại địa điểm muốn hiện trên bản đồ. Bỏ tích để ẩn cho bản đồ đỡ rối.</p>
+  <div class="poiGrid" id="poiGrid"></div>
+  <div class="row"><button class="btn" id="poiNone">Ẩn tất cả</button><button class="btn primary" id="poiClose">Xong</button></div>
+  <h3 style="margin-top:16px">Gần nhất</h3>
+  <div class="results" id="poiNear"><p>Chưa chọn loại địa điểm nào.</p></div>
 </div></div>
 
 <!-- Báo camera -->
@@ -226,37 +287,61 @@ html,body{height:100%;margin:0;background:var(--navy);color:var(--fg);font-famil
 </div></div>
 
 <!-- Tuỳ chọn -->
-<div class="sheet" id="menuSheet" hidden><div class="box">
+<div class="sheet" id="menuSheet" hidden><div class="box menuBox">
   <h3>Tuỳ chọn</h3>
-  <label for="optVeh">Loại phương tiện</label>
+<details class="grp" data-k="xe"><summary>🚗 Xe và cảnh báo tốc độ</summary><div class="gb">
+<label for="optVeh">Loại phương tiện</label>
   <select id="optVeh"><option value="car">Ô tô</option><option value="moto">Xe mô tô, xe gắn máy</option></select>
-  <label for="optWarn">Cảnh báo camera từ khoảng cách</label>
+<label for="optWarn">Cảnh báo camera từ khoảng cách</label>
   <select id="optWarn"><option value="300">300 m</option><option value="500" selected>500 m</option><option value="800">800 m</option><option value="1000">1.000 m</option></select>
-  <label for="optTol">Báo vượt tốc khi vượt quá giới hạn</label>
+<label for="optTol">Báo vượt tốc khi vượt quá giới hạn</label>
   <select id="optTol"><option value="0">Ngay khi vượt</option><option value="3" selected>3 km/h</option><option value="5">5 km/h</option></select>
-  <label style="display:flex;align-items:center;gap:8px;color:var(--fg);font-size:13.5px"><input type="checkbox" id="optBanTurn" style="width:auto"> Nhắc cấm rẽ, cấm quay đầu ở ngã ba, ngã tư</label>
-  <label style="display:flex;align-items:center;gap:8px;color:var(--fg);font-size:13.5px"><input type="checkbox" id="optBanPark" style="width:auto"> Nhắc đoạn đường cấm dừng, cấm đỗ</label>
-  <label for="optArea">Khu vực khi đường chưa có biển trên dữ liệu</label>
+<label for="optArea">Khu vực khi đường chưa có biển trên dữ liệu</label>
   <select id="optArea"><option value="urban">Trong khu đông dân cư</option><option value="rural">Ngoài khu đông dân cư</option></select>
-  <label for="optVoice">Giọng nói cảnh báo</label>
+</div></details>
+<details class="grp" data-k="cam"><summary>🚫 Nhắc biển cấm, cấm đậu</summary><div class="gb">
+<label class="ck"><input type="checkbox" id="optBanTurn"> Nhắc cấm rẽ, cấm quay đầu ở ngã ba, ngã tư</label>
+<label class="ck"><input type="checkbox" id="optBanPark"> Nhắc đoạn đường cấm dừng, cấm đỗ</label>
+</div></details>
+<details class="grp" data-k="traf"><summary>🚦 Kẹt xe, tai nạn</summary><div class="gb">
+<label class="ck"><input type="checkbox" id="optTrafWarn"> Nhắc kẹt xe, tai nạn và gợi ý đường nhanh hơn khi đang chỉ đường</label>
+<p style="font-size:11.5px">Cần mã TomTom ở mục Mã API bên dưới. Nút 🚦 trên bản đồ để bật, tắt lớp màu kẹt xe.</p>
+</div></details>
+<details class="grp" data-k="voice"><summary>🔊 Giọng nói và âm thanh</summary><div class="gb">
+<label for="optVoice">Giọng nói cảnh báo</label>
   <select id="optVoice"><option value="">Tự động (giọng tiếng Việt của máy)</option></select>
   <label for="optRate">Tốc độ đọc: <span id="rateVal">1,0</span></label>
   <input id="optRate" type="range" min="0.6" max="1.6" step="0.1" value="1">
   <label for="optVol">Âm lượng giọng nói: <span id="volVal">100</span>%</label>
   <input id="optVol" type="range" min="0.2" max="1" step="0.1" value="1">
   <div class="row" style="margin-top:8px"><button class="btn" id="bVoiceTest">Nghe thử giọng</button></div>
-  <label for="optGoong">Mã Goong API (tìm số nhà chính xác, không bắt buộc)</label>
-  <input id="optGoong" type="text" autocomplete="off" placeholder="Dán mã API của goong.io vào đây">
-  <h3 style="margin-top:20px">Địa điểm đã lưu (<span id="placeCount">0</span>)</h3>
-  <div class="list" id="placeList"></div>
-  <p style="font-size:11.5px">Trên iPhone có thể tải thêm giọng tiếng Việt tại Cài đặt > Trợ năng > Nội dung được đọc > Giọng nói > Tiếng Việt (ví dụ Linh, giọng Nâng cao). Tải xong mở lại ứng dụng để thấy giọng mới.</p>
-  <div class="row"><button class="btn" id="bRefresh">Tải lại dữ liệu</button><button class="btn" id="bGmaps">Mở Google Maps</button></div>
-  <h3 style="margin-top:20px">Camera do đồng chí báo (<span id="userCount">0</span>)</h3>
-  <div class="list" id="userList"></div>
-  <div class="row"><button class="btn" id="bExport">Sao chép dữ liệu</button><button class="btn" id="bImport">Nhập dữ liệu</button></div>
+<p style="font-size:11.5px">Trên iPhone có thể tải thêm giọng tiếng Việt tại Cài đặt > Trợ năng > Nội dung được đọc > Giọng nói > Tiếng Việt (ví dụ Linh, giọng Nâng cao). Tải xong mở lại ứng dụng để thấy giọng mới.</p>
+</div></details>
+<details class="grp" data-k="poi"><summary>🏪 Địa điểm gần đây</summary><div class="gb">
+<p style="font-size:12.5px">Chọn loại địa điểm muốn hiện trên bản đồ (ngân hàng, cây xăng, quán ăn…).</p><div class="row"><button class="btn" id="bPoiOpen">Mở danh sách địa điểm</button></div>
+</div></details>
+<details class="grp" data-k="saved"><summary>⭐ Địa điểm đã lưu (<span id="placeCount">0</span>)</summary><div class="gb">
+<div class="list" id="placeList"></div>
+</div></details>
+<details class="grp" data-k="ucam"><summary>📷 Camera do đồng chí báo (<span id="userCount">0</span>)</summary><div class="gb">
+<div class="list" id="userList"></div>
+<div class="row"><button class="btn" id="bExport">Sao chép dữ liệu</button><button class="btn" id="bImport">Nhập dữ liệu</button></div>
   <textarea id="ioBox" rows="4" hidden placeholder="Dán dữ liệu camera (JSON) vào đây rồi bấm Nhập dữ liệu lần nữa"></textarea>
-  <p style="font-size:11.5px">Nguồn dữ liệu: OpenStreetMap qua Overpass API (biển tốc độ, camera), cập nhật theo vị trí mỗi khi di chuyển quá 1 km hoặc sau 10 phút. Ảnh vệ tinh: Esri World Imagery. Đường chưa gắn biển trên dữ liệu sẽ hiển thị mức ước tính theo quy định tốc độ hiện hành, có chữ “ước tính”.</p>
-  <div class="row"><button class="btn primary" id="menuClose">Đóng</button></div>
+</div></details>
+<details class="grp" data-k="api"><summary>🔑 Mã API (Goong, TomTom)</summary><div class="gb">
+<label for="optGoong">Mã Goong API (tìm số nhà chính xác, không bắt buộc)</label>
+  <input id="optGoong" type="text" autocomplete="off" placeholder="Dán mã API của goong.io vào đây">
+<label for="optTomtom">Mã TomTom API (kẹt xe, tai nạn, đường tránh; miễn phí tại developer.tomtom.com)</label>
+  <input id="optTomtom" type="text" autocomplete="off" placeholder="Dán mã API của TomTom vào đây">
+<div class="row"><a class="btn" href="https://developer.tomtom.com/user/register" target="_blank" rel="noopener" style="text-align:center;text-decoration:none">🚦 Lấy mã TomTom</a><a class="btn" href="https://account.goong.io/register" target="_blank" rel="noopener" style="text-align:center;text-decoration:none">🔎 Lấy mã Goong</a></div>
+<p style="font-size:11.5px">Cách lấy mã TomTom (miễn phí, không cần thẻ): bấm nút trên, đăng ký bằng email, mở thư xác nhận. Vào mục Keys, bấm sao chép mã có sẵn (My first API key), quay lại đây dán vào ô. Ứng dụng tự lưu, lần sau không phải nhập lại.</p>
+</div></details>
+<details class="grp" data-k="data"><summary>ℹ️ Dữ liệu và thông tin</summary><div class="gb">
+<div class="row"><button class="btn" id="bRefresh">Tải lại dữ liệu</button><button class="btn" id="bGmaps">Mở Google Maps</button></div>
+<p style="font-size:11.5px">Nguồn dữ liệu: OpenStreetMap qua Overpass API (biển tốc độ, camera), cập nhật theo vị trí mỗi khi di chuyển quá 1 km hoặc sau 10 phút. Ảnh vệ tinh: Esri World Imagery. Đường chưa gắn biển trên dữ liệu sẽ hiển thị mức ước tính theo quy định tốc độ hiện hành, có chữ “ước tính”.</p>
+<p style="font-size:11.5px" id="verLine"></p>
+</div></details>
+  <div class="row menuFoot"><button class="btn primary" id="menuClose">Đóng</button></div>
 </div></div>
 
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js" crossorigin=""></script>
@@ -307,6 +392,7 @@ function setupLayers(){
       paint:{'fill-extrusion-color':['interpolate',['linear'],['coalesce',['get','render_height'],8],0,'#c9d3e0',40,'#9fb3cf',120,'#7f95b5'],
         'fill-extrusion-height':['coalesce',['get','render_height'],8], 'fill-extrusion-base':['coalesce',['get','render_min_height'],0], 'fill-extrusion-opacity':0.85}});
   }
+  applyTraffic();
   if (!map.getSource('roads')) map.addSource('roads', {type:'geojson', data:{type:'FeatureCollection', features:[]}});
   if (!map.getLayer('roads')) map.addLayer({id:'roads', type:'line', source:'roads', layout:{'line-cap':'round','line-join':'round'},
     paint:{'line-color':['get','col'], 'line-width':['interpolate',['linear'],['zoom'],13,2,18,6], 'line-opacity':0.7}}, map.getLayer('nha-3d') ? 'nha-3d' : undefined);
@@ -336,7 +422,7 @@ const me = new maplibregl.Marker({element:meEl, rotationAlignment:'map', pitchAl
 let meAdded = false;
 let follow = true;
 map.on('dragstart', () => { follow = false; $('recenter').classList.add('off'); });
-$('recenter').onclick = () => { follow = true; $('recenter').classList.remove('off'); if (pos) followCam(true); };
+$('recenter').onclick = () => { if (pinDragged){ pinDragged = false; return; } follow = true; $('recenter').classList.remove('off'); if (pos) followCam(true); };
 function followCam(force){
   if (!pos) return;
   const hudH = $('hud').offsetHeight, barH = $('bar').offsetHeight;
@@ -347,7 +433,7 @@ function followCam(force){
 }
 // nhấn giữ trên bản đồ để báo camera
 let lpT = null;
-map.on('touchstart', e => { if (e.originalEvent.touches.length!==1) return; const ll = e.lngLat; lpT = setTimeout(()=>openAdd({lat:ll.lat, lon:ll.lng}), 650); });
+map.on('touchstart', e => { if (e.originalEvent.touches.length!==1) return; const ll = e.lngLat; lpT = setTimeout(()=>{ if (pickIdx < 0) showDrop({lat:ll.lat, lon:ll.lng}); }, 650); });
 ['touchend','touchmove','dragstart','zoomstart'].forEach(ev => map.on(ev, () => clearTimeout(lpT)));
 
 /* ---------- Hình học ---------- */
@@ -702,7 +788,7 @@ function openAdd(latlng){
   $('addSheet').hidden = false;
 }
 $('bAdd').onclick = () => openAdd(null);
-map.on('contextmenu', e => openAdd({lat:e.lngLat.lat, lon:e.lngLat.lng}));
+map.on('contextmenu', e => showDrop({lat:e.lngLat.lat, lon:e.lngLat.lng}));
 $('addCancel').onclick = () => $('addSheet').hidden = true;
 $('addSave').onclick = () => {
   const c = {id:'u'+Date.now(), lat:addAt.lat, lon:addAt.lon, type:$('addType').value, limit: parseInt($('addLimit').value,10) || null,
@@ -733,8 +819,11 @@ function renderUserList(){
     d.appendChild(b); $('userList').appendChild(d);
   });
 }
-$('bMenu').onclick = () => { $('optVeh').value=opts.veh; $('optWarn').value=opts.warn; $('optTol').value=opts.tol; $('optArea').value=opts.area; $('optBanTurn').checked=opts.banTurn!==false; $('optBanPark').checked=opts.banPark!==false; $('optGoong').value=opts.goong||''; renderPlaces(); loadVoices(); $('optRate').value=opts.rate||1; $('optVol').value=opts.vol==null?1:opts.vol; showVoiceVals(); renderUserList(); $('menuSheet').hidden = false; };
+$('bMenu').onclick = () => { $('optVeh').value=opts.veh; $('optWarn').value=opts.warn; $('optTol').value=opts.tol; $('optArea').value=opts.area; $('optBanTurn').checked=opts.banTurn!==false; $('optBanPark').checked=opts.banPark!==false; $('optGoong').value=opts.goong||''; $('optTomtom').value=opts.tomtom||''; $('optTrafWarn').checked=opts.trafWarn!==false; renderPlaces(); loadVoices(); $('optRate').value=opts.rate||1; $('optVol').value=opts.vol==null?1:opts.vol; showVoiceVals(); renderUserList(); $('menuSheet').hidden = false; };
 $('menuClose').onclick = () => { $('menuSheet').hidden = true; };
+document.querySelectorAll('#menuSheet details.grp').forEach(d => { const open = LS.get('grpOpen', []); if (open.includes(d.dataset.k)) d.open = true;
+  d.addEventListener('toggle', () => { LS.set('grpOpen', [...document.querySelectorAll('#menuSheet details.grp')].filter(x=>x.open).map(x=>x.dataset.k)); }); });
+$('bPoiOpen').onclick = () => { $('menuSheet').hidden = true; $('poiBtn').click(); };
 ['optVeh','optWarn','optTol','optArea'].forEach(id => $(id).onchange = () => {
   opts.veh=$('optVeh').value; setVeh(opts.veh); opts.warn=+$('optWarn').value; opts.tol=+$('optTol').value; opts.area=$('optArea').value; LS.set('opts', opts); update();
 });
@@ -1020,6 +1109,7 @@ async function fetchOsrm(list){
   return {coords, mans, legEnds, totalM: rt.distance, totalS: rt.duration * (opts.veh==='moto' ? 1.15 : 1)};
 }
 async function getRoute(list, withHeading){
+  if (opts.tomtom){ try{ return await fetchTomtom(list); }catch(e){} }
   try{ return await fetchValhalla(list, withHeading); }catch(e){ return await fetchOsrm(list); }
 }
 function prepRoute(r){
@@ -1055,16 +1145,16 @@ async function planRoute(){
   $('routeBox').hidden = false; $('rsTime').textContent = 'Đang tìm đường…'; $('rsDist').textContent = ''; $('rsSteps').innerHTML = ''; $('routeGo').hidden = true;
   try{ plan = prepRoute(await getRoute(list, !!list[0].me)); plan.pts = list; }
   catch(e){ $('rsTime').textContent = 'Chưa tìm được đường'; $('rsDist').textContent = 'thử lại sau ít giây'; return; }
-  $('rsTime').textContent = fmtTime(plan.totalS); $('rsDist').textContent = fmtDist(plan.totalM) + (opts.veh==='moto' ? ' · xe máy' : ' · ô tô');
+  $('rsTime').textContent = fmtTime(plan.totalS); $('rsDist').textContent = fmtDist(plan.totalM) + (opts.veh==='moto' ? ' · xe máy' : ' · ô tô') + (plan.traffic ? (plan.delayS > 60 ? ' · kẹt xe thêm ' + fmtTime(plan.delayS) : ' · đã tính kẹt xe') : '');
   $('rsTo').textContent = list.map((p,i)=>LET(i)+': '+p.name).join('  →  ');
   $('rsSteps').innerHTML = plan.mans.map((m,i) => `<div><span>${escapeHtml(m.text)}</span><span>${i < plan.mans.length-1 ? fmtDist(plan.mans[i+1].at - m.at) : ''}</span></div>`).join('');
-  $('routeGo').hidden = false;
+  $('routeGo').hidden = false; $('gmTrafRow').hidden = false;
   drawRoute(plan); drawPts();
   const b = plan.coords.reduce((bb,c)=>[[Math.min(bb[0][0],c[0]),Math.min(bb[0][1],c[1])],[Math.max(bb[1][0],c[0]),Math.max(bb[1][1],c[1])]], [[180,90],[-180,-90]]);
   follow = false; $('recenter').classList.add('off');
   map.fitBounds(b, {padding:{top:150, bottom: Math.round(innerHeight*0.55), left:40, right:40}, pitch:0, bearing:0, duration:700});
 }
-function clearPlan(){ plan = null; nav = null; pts = [{me:true, name:'Vị trí của tôi'}, null]; ai = 1; drawRoute(null); drawPts(); $('navBan').hidden = true; $('navInfo').hidden = true; $('searchPill').hidden = false; $('routeBox').hidden = true; }
+function clearPlan(){ $('gmTrafRow').hidden = true; plan = null; nav = null; incOnRoute = []; $('trafAlert').hidden = true; altRoute = null; pts = [{me:true, name:'Vị trí của tôi'}, null]; ai = 1; drawRoute(null); drawPts(); $('navBan').hidden = true; $('navInfo').hidden = true; $('searchPill').hidden = false; $('routeBox').hidden = true; }
 $('routeGo').onclick = () => startNav();
 function startNav(){
   if (!plan) return;
@@ -1077,6 +1167,7 @@ function startNav(){
   const m0 = plan.mans[1] || plan.mans[0];
   $('navArrow').innerHTML = arrowSvg(m0.type); $('navDist').textContent = fmtDist(m0.at); $('navText').textContent = pos ? m0.text : 'Chờ vị trí GPS… ' + m0.text; $('navThen').textContent = '';
   $('navRemain').textContent = fmtTime(plan.totalS) + ' · ' + fmtDist(plan.totalM); $('navEta').textContent = 'Dự kiến đến lúc ' + hhmm(new Date(Date.now() + plan.totalS*1000));
+  trafCheckAt = 0; incSaid = {};
   if (!nav.joined && pos && dist(pos, plan.pts[0]) > 300) toast('Lộ trình bắt đầu từ điểm A. Khi đồng chí tới gần lộ trình, chỉ đường sẽ tự bám theo.', true);
   navTick();
 }
@@ -1122,9 +1213,316 @@ function navTick(){
   if (!said.far && dm <= far && dm > 90){ said.far = true; speak('Sau ' + sayDist(dm) + ', ' + m.text.toLowerCase()); }
   if (!said.near && dm <= Math.max(40, spd*4)){ said.near = true; speak(m.text + (nx && (nx.at - m.at) < 150 ? ', sau đó ' + nx.text.toLowerCase() : '')); }
   nav.said[key] = said;
+  trafTick(along);
 }
 
+
+/* ---------- Địa điểm gần đây (POI) ---------- */
+const POI = {
+  bank:{ico:'🏦', name:'Ngân hàng, ATM', q:'["amenity"~"^(bank|atm)$"]'},
+  fuel:{ico:'⛽', name:'Cây xăng', q:'["amenity"="fuel"]'},
+  food:{ico:'🍜', name:'Quán ăn', q:'["amenity"~"^(restaurant|fast_food|food_court)$"]'},
+  cafe:{ico:'☕', name:'Cà phê', q:'["amenity"="cafe"]'},
+  repair:{ico:'🔧', name:'Sửa xe, vá xe', q:'["shop"~"^(motorcycle_repair|car_repair|tyres|motorcycle)$"]'},
+  parking:{ico:'🅿️', name:'Bãi giữ xe', q:'["amenity"~"^(parking|motorcycle_parking)$"]'},
+  health:{ico:'💊', name:'Nhà thuốc, bệnh viện', q:'["amenity"~"^(pharmacy|hospital|clinic)$"]'},
+  shop:{ico:'🛒', name:'Tạp hoá, siêu thị', q:'["shop"~"^(convenience|supermarket)$"]'},
+  wash:{ico:'🚿', name:'Rửa xe', q:'["amenity"="car_wash"]'},
+  charge:{ico:'⚡', name:'Trạm sạc', q:'["amenity"="charging_station"]'},
+  wc:{ico:'🚻', name:'Nhà vệ sinh', q:'["amenity"="toilets"]'},
+  police:{ico:'🚓', name:'Công an', q:'["amenity"="police"]'}
+};
+let poiOn = (opts.poi || []).filter(k => POI[k]), poiData = [], poiMarkers = [], poiCenter = null, poiLoading = false;
+function setPoiBtn(){ $('poiBtn').classList.toggle('on', poiOn.length > 0); }
+function renderPoiGrid(){
+  $('poiGrid').innerHTML = Object.entries(POI).map(([k,v]) => `<label><input type="checkbox" data-k="${k}" ${poiOn.includes(k)?'checked':''}> ${v.ico} ${v.name}</label>`).join('');
+  $('poiGrid').querySelectorAll('input').forEach(cb => cb.onchange = () => {
+    poiOn = [...$('poiGrid').querySelectorAll('input:checked')].map(x=>x.dataset.k); opts.poi = poiOn; LS.set('opts', opts); setPoiBtn();
+    if (poiOn.length) loadPoi(true); else { poiData = []; drawPoi(); }
+  });
+}
+$('poiBtn').onclick = () => { renderPoiGrid(); renderPoiNear(); $('poiSheet').hidden = false; };
+$('poiClose').onclick = () => $('poiSheet').hidden = true;
+$('poiNone').onclick = () => { poiOn = []; opts.poi = []; LS.set('opts', opts); poiData = []; drawPoi(); renderPoiGrid(); setPoiBtn(); toast('Đã ẩn tất cả địa điểm', true); };
+function poiCat(t){
+  if (/^(bank|atm)$/.test(t.amenity)) return 'bank'; if (t.amenity==='fuel') return 'fuel'; if (/^(restaurant|fast_food|food_court)$/.test(t.amenity)) return 'food';
+  if (t.amenity==='cafe') return 'cafe'; if (/^(motorcycle_repair|car_repair|tyres|motorcycle)$/.test(t.shop)) return 'repair'; if (/^(parking|motorcycle_parking)$/.test(t.amenity)) return 'parking';
+  if (/^(pharmacy|hospital|clinic)$/.test(t.amenity)) return 'health'; if (/^(convenience|supermarket)$/.test(t.shop)) return 'shop'; if (t.amenity==='car_wash') return 'wash';
+  if (t.amenity==='charging_station') return 'charge'; if (t.amenity==='toilets') return 'wc'; if (t.amenity==='police') return 'police'; return null;
+}
+async function loadPoi(force){
+  if (!poiOn.length || poiLoading) return;
+  const c = map.getCenter(), cen = {lat:c.lat, lon:c.lng};
+  if (!force && poiCenter && dist(poiCenter, cen) < 700) return;
+  poiLoading = true;
+  const r = 1500, dLat = r/110540, dLon = r/(111320*Math.cos(rad(cen.lat)));
+  const bb = [cen.lat-dLat, cen.lon-dLon, cen.lat+dLat, cen.lon+dLon].map(x=>x.toFixed(5)).join(',');
+  const q = '[out:json][timeout:20];(' + poiOn.map(k => `node${POI[k].q}(${bb});way${POI[k].q}(${bb});`).join('') + ');out center tags 400;';
+  const ctls = OVERPASS.map(()=>new AbortController());
+  try{
+    const data = await Promise.any(OVERPASS.map((url,i) => (async () => { const to = setTimeout(()=>ctls[i].abort(), 20000);
+      try{ const res = await fetch(url, {method:'POST', body:'data='+encodeURIComponent(q), headers:{'Content-Type':'application/x-www-form-urlencoded'}, signal:ctls[i].signal}); if (!res.ok) throw 0; return await res.json(); } finally { clearTimeout(to); } })()));
+    ctls.forEach(x=>{ try{ x.abort(); }catch(e){} });
+    poiData = (data.elements||[]).map(e => { const t = e.tags||{}; const lat = e.lat ?? (e.center&&e.center.lat), lon = e.lon ?? (e.center&&e.center.lon); const k = poiCat(t);
+      return k && lat!=null ? {id:e.type+e.id, lat, lon, k, name: t.name || t.brand || t.operator || POI[k].name, hours:t.opening_hours||'', brand:t.brand||'', addr:[t['addr:housenumber'], t['addr:street']].filter(Boolean).join(' ')} : null; }).filter(Boolean);
+    poiCenter = cen; drawPoi(); renderPoiNear();
+  }catch(e){ toast('Máy chủ dữ liệu đang chậm, chưa tải được địa điểm. Thử lại sau ít giây.'); poiCenter = null; }
+  poiLoading = false;
+}
+function poiPopup(p){
+  const d = pos ? fmtDist(dist(pos, p)) : '';
+  const el = document.createElement('div');
+  el.innerHTML = `<b>${POI[p.k].ico} ${escapeHtml(p.name)}</b><br><small>${escapeHtml(POI[p.k].name)}${d ? ' · cách ' + d : ''}</small>${p.addr ? '<br><small>' + escapeHtml(p.addr) + '</small>' : ''}${p.hours ? '<br><small>Giờ mở cửa: ' + escapeHtml(p.hours) + '</small>' : ''}<div class="popBtns"><button>Đi đến đây</button><button>Thêm điểm dừng</button></div>`;
+  const [go, stop] = el.querySelectorAll('button');
+  const place = {lat:p.lat, lon:p.lon, name:p.name, addr:POI[p.k].name + (p.addr ? ', ' + p.addr : '')};
+  go.onclick = () => { if (!nav){ pts = [pts[0] || {me:true, name:'Vị trí của tôi'}, place]; } else { nav.pts && (pts = nav.pts.slice(0,1).concat([place])); pts[0] = {me:true, name:'Vị trí của tôi'}; }
+    ai = pts.length-1; $('routeSheet').hidden = false; renderPts(); drawPts(); planRoute(); };
+  stop.onclick = () => { if (!pts[pts.length-1]){ pts[pts.length-1] = place; } else pts.splice(pts.length-1, 0, place); ai = pts.length-1; $('routeSheet').hidden = false; renderPts(); drawPts(); if (ready()) planRoute(); };
+  return new maplibregl.Popup({offset:18, closeButton:true, maxWidth:'260px'}).setDOMContent(el);
+}
+function drawPoi(){
+  poiMarkers.splice(0).forEach(m=>m.remove());
+  poiData.filter(p => poiOn.includes(p.k)).slice(0, 250).forEach(p => {
+    const el = document.createElement('div'); el.className = 'poiMk'; el.textContent = POI[p.k].ico; el.title = p.name;
+    poiMarkers.push(new maplibregl.Marker({element:el}).setLngLat([p.lon, p.lat]).setPopup(poiPopup(p)).addTo(map));
+  });
+}
+function renderPoiNear(){
+  const box = $('poiNear'); const ref = pos || {lat:map.getCenter().lat, lon:map.getCenter().lng};
+  const list = poiData.filter(p => poiOn.includes(p.k)).map(p => Object.assign({d:dist(ref, p)}, p)).sort((a,b)=>a.d-b.d).slice(0, 12);
+  if (!poiOn.length){ box.innerHTML = '<p>Chưa chọn loại địa điểm nào.</p>'; return; }
+  if (!list.length){ box.innerHTML = poiLoading ? '<p>Đang tải…</p>' : '<p>Chưa có dữ liệu quanh đây.</p>'; return; }
+  box.innerHTML = '';
+  list.forEach(p => { const b = document.createElement('button'); b.innerHTML = `${POI[p.k].ico} ${escapeHtml(p.name)}<small>${escapeHtml(POI[p.k].name)} · ${fmtDist(p.d)}${p.hours ? ' · ' + escapeHtml(p.hours) : ''}</small>`;
+    b.onclick = () => { $('poiSheet').hidden = true; follow = false; $('recenter').classList.add('off'); map.flyTo({center:[p.lon,p.lat], zoom:17, duration:700}); const mk = poiMarkers.find(m => { const ll = m.getLngLat(); return Math.abs(ll.lat-p.lat)<1e-7 && Math.abs(ll.lng-p.lon)<1e-7; }); if (mk) setTimeout(()=>mk.togglePopup(), 750); };
+    box.appendChild(b); });
+}
+map.on('moveend', () => { if (poiOn.length) loadPoi(false); });
+setPoiBtn();
+
+/* ---------- Ghim kéo từ nút vị trí: xem địa chỉ, đi đến ngay ---------- */
+let pinDragged = false, dropMk = null, dropAt = null, dropSeq = 0;
+(() => {
+  const btn = $('recenter'), pin = $('dragPin'); const LIFT = 46; let st = null, drag = false;
+  btn.addEventListener('pointerdown', e => { st = {x:e.clientX, y:e.clientY}; drag = false; try{ btn.setPointerCapture(e.pointerId); }catch(_){} });
+  btn.addEventListener('pointermove', e => {
+    if (!st) return;
+    if (!drag && Math.hypot(e.clientX-st.x, e.clientY-st.y) > 10){ drag = true; pin.hidden = false; if (navigator.vibrate) navigator.vibrate(15); }
+    if (drag){ pin.style.left = e.clientX + 'px'; pin.style.top = (e.clientY - LIFT) + 'px'; e.preventDefault(); }
+  });
+  const end = e => {
+    if (!st) return; const was = drag; st = null; drag = false; pin.hidden = true;
+    if (!was) return; pinDragged = true; setTimeout(()=>{ pinDragged = false; }, 400);
+    if (e.type === 'pointercancel') return;
+    const r = $('map').getBoundingClientRect(); const ll = map.unproject([e.clientX - r.left, e.clientY - LIFT - r.top]);
+    follow = false; btn.classList.add('off'); showDrop({lat:ll.lat, lon:ll.lng});
+  };
+  btn.addEventListener('pointerup', end); btn.addEventListener('pointercancel', end);
+})();
+async function revGeo(p){
+  const out = {name:'Điểm đã chọn', addr:p.lat.toFixed(5) + ', ' + p.lon.toFixed(5)};
+  if (opts.goong){ try{ const r = await fetch(`https://rsapi.goong.io/Geocode?latlng=${p.lat},${p.lon}&api_key=${encodeURIComponent(opts.goong)}`); const j = await r.json(); const g = j.results && j.results[0];
+    if (g){ out.name = (g.name || g.formatted_address.split(',')[0]); out.addr = g.formatted_address; return out; } }catch(e){} }
+  try{ const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${p.lat}&lon=${p.lon}&zoom=18&addressdetails=1&accept-language=vi`); const j = await r.json(); const a = j.address || {};
+    if (j.display_name){ const st = [a.house_number, a.road].filter(Boolean).join(' ');
+      out.name = j.name || st || a.road || j.display_name.split(',')[0];
+      out.addr = [st && j.name ? st : (j.name ? '' : ''), a.road && !st ? a.road : '', a.quarter || a.suburb || a.neighbourhood, a.city_district || a.district || a.county, a.city || a.town || a.state].filter(Boolean).filter((v,i,arr)=>arr.indexOf(v)===i).join(', ');
+      return out; } }catch(e){}
+  try{ const r = await fetch(`https://photon.komoot.io/reverse?lat=${p.lat}&lon=${p.lon}&limit=1`); const j = await r.json(); const pp = j.features && j.features[0] && j.features[0].properties;
+    if (pp){ out.name = pp.name || [pp.housenumber, pp.street].filter(Boolean).join(' ') || out.name; out.addr = [pp.street, pp.district || pp.locality, pp.city].filter(Boolean).join(', ') || out.addr; } }catch(e){}
+  return out;
+}
+async function showDrop(p){
+  clearTimeout(lpT); dropAt = Object.assign({}, p); const seq = ++dropSeq;
+  if (!dropMk){
+    const el = document.createElement('div'); el.className = 'dropMk';
+    el.innerHTML = '<svg viewBox="0 0 24 24" width="40" height="40"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z" fill="#e53935" stroke="#fff" stroke-width="1.5"/><circle cx="12" cy="9" r="2.6" fill="#fff"/></svg>';
+    dropMk = new maplibregl.Marker({element:el, anchor:'bottom', draggable:true}).setLngLat([p.lon, p.lat]).addTo(map);
+    dropMk.on('dragend', () => { const ll = dropMk.getLngLat(); showDrop({lat:ll.lat, lon:ll.lng}); });
+  } else dropMk.setLngLat([p.lon, p.lat]);
+  $('dropName').textContent = 'Đang tìm địa chỉ…'; $('dropAddr').textContent = p.lat.toFixed(5) + ', ' + p.lon.toFixed(5);
+  $('dropDist').textContent = pos ? 'Cách đồng chí ' + fmtDist(dist(pos, p)) + ' (đường chim bay)' : 'Chưa có vị trí GPS của đồng chí';
+  $('dropSv').hidden = true; $('dropCard').hidden = false;
+  const g = await revGeo(p); if (seq !== dropSeq) return;
+  Object.assign(dropAt, g); $('dropName').textContent = g.name; $('dropAddr').textContent = g.addr;
+}
+function hideDrop(){ $('dropCard').hidden = true; if (dropMk){ dropMk.remove(); dropMk = null; } dropSeq++; }
+const dropPlace = () => ({lat:dropAt.lat, lon:dropAt.lon, name:dropAt.name || 'Điểm đã chọn', addr:dropAt.addr || ''});
+$('dropX').onclick = hideDrop;
+$('dropGo').onclick = async () => {
+  if (!dropAt) return; const place = dropPlace(); hideDrop();
+  if (!pos){ pts = [{me:true, name:'Vị trí của tôi'}, place]; ai = 1; $('routeSheet').hidden = false; renderPts(); drawPts(); toast('Chưa có vị trí GPS. Bấm Bắt đầu hành trình rồi thử lại, hoặc chọn điểm A khác.'); return; }
+  pts = [{me:true, name:'Vị trí của tôi'}, place]; ai = 1; renderPts(); drawPts();
+  await planRoute(); if (plan && plan.pts && plan.pts[plan.pts.length-1] && plan.pts[plan.pts.length-1].lat === place.lat) startNav(); else $('routeSheet').hidden = false;
+};
+$('dropStop').onclick = () => {
+  if (!dropAt) return; const place = dropPlace(); hideDrop();
+  if (nav) pts = nav.pts.map((p,i) => i===0 ? {me:true, name:'Vị trí của tôi'} : p);
+  if (!pts[pts.length-1]) pts[pts.length-1] = place; else pts.splice(pts.length-1, 0, place);
+  ai = pts.length-1; $('routeSheet').hidden = false; renderPts(); drawPts(); if (ready()) planRoute();
+};
+$('dropSave').onclick = () => { $('dropSv').hidden = false; $('dropSvName').value = ''; setTimeout(()=>$('dropSvName').focus(), 30); };
+$('dropSvOk').onclick = () => {
+  const nm = $('dropSvName').value.trim(); if (!nm || !dropAt){ $('dropSvName').focus(); return; }
+  places = places.filter(x => normVN(x.name) !== normVN(nm)); places.unshift({name:nm, lat:dropAt.lat, lon:dropAt.lon, addr:dropAt.addr || dropAt.name}); savePlaces();
+  $('dropSv').hidden = true; $('dropName').textContent = '⭐ ' + nm; toast('Đã lưu "' + nm + '"', true);
+};
+$('dropCam').onclick = () => { if (!dropAt) return; const p = {lat:dropAt.lat, lon:dropAt.lon}; hideDrop(); openAdd(p); };
+
+/* ---------- Giao thông trực tiếp (TomTom): lớp kẹt xe, tai nạn, đường nhanh hơn ---------- */
+const TT = 'https://api.tomtom.com';
+let trafOn = opts.traffic !== false, incOnRoute = [], incMarkers = [], incSaid = {}, trafCheckAt = 0, altRoute = null, trafBusy = false;
+const INC = {0:['⚠️','Sự cố'],1:['💥','Tai nạn'],2:['🌫️','Sương mù'],3:['⚠️','Đường nguy hiểm'],4:['🌧️','Mưa lớn'],5:['🧊','Đường trơn'],6:['🚗','Kẹt xe'],7:['🚧','Thu hẹp làn'],8:['⛔','Cấm đường'],9:['🚧','Thi công'],10:['💨','Gió mạnh'],11:['🌊','Ngập nước'],14:['🛻','Xe hỏng']};
+function setTrafBtn(){ $('trafBtn').classList.toggle('on', !!opts.tomtom && trafOn); $('trafBtn').style.opacity = opts.tomtom ? '' : '1'; }
+function applyTraffic(){
+  if (!styleReady) return;
+  const want = !!opts.tomtom && trafOn;
+  if (map.getLayer('traffic')) map.removeLayer('traffic');
+  if (map.getSource('traffic')) map.removeSource('traffic');
+  if (!want) return;
+  try{
+    map.addSource('traffic', {type:'raster', tiles:[`${TT}/traffic/map/4/tile/flow/relative0/{z}/{x}/{y}.png?key=${encodeURIComponent(opts.tomtom)}&tileSize=256&thickness=8`], tileSize:256, maxzoom:20});
+    map.addLayer({id:'traffic', type:'raster', source:'traffic', paint:{'raster-opacity':0.9,'raster-fade-duration':0}}, map.getLayer('route-case') ? 'route-case' : undefined);
+  }catch(e){}
+}
+function gmTraffic(){
+  const list = plan && plan.pts ? plan.pts : null; const ll = p => p.lat.toFixed(6) + ',' + p.lon.toFixed(6);
+  let u;
+  if (list && list.length >= 2){ const o = list[0], d = list[list.length-1], w = list.slice(1,-1);
+    u = `https://www.google.com/maps/dir/?api=1&origin=${o.me && pos ? ll(pos) : ll(o)}&destination=${ll(d)}${w.length ? '&waypoints=' + encodeURIComponent(w.map(ll).join('|')) : ''}&travelmode=${opts.veh==='moto' ? 'two-wheeler' : 'driving'}`; }
+  else { const c = pos || {lat:map.getCenter().lat, lon:map.getCenter().lng}; u = `https://www.google.com/maps/@${c.lat.toFixed(6)},${c.lon.toFixed(6)},15z/data=!5m1!1e1`; }
+  window.open(u, '_blank');
+}
+$('gmTraf').onclick = gmTraffic;
+$('trafBtn').onclick = () => {
+  if (!opts.tomtom){ toast('Đang mở Google Maps có lớp kẹt xe trực tiếp. Muốn cảnh báo ngay trong ứng dụng thì gửi mã TomTom cho tôi.', true); setTimeout(gmTraffic, 600); return; }
+  trafOn = !trafOn; opts.traffic = trafOn; LS.set('opts', opts); setTrafBtn(); applyTraffic(); toast(trafOn ? 'Đã bật lớp kẹt xe: xanh thông thoáng, vàng đông, đỏ kẹt' : 'Đã tắt lớp kẹt xe', true);
+  if (trafOn) loadIncidents();
+};
+$('optTomtom').onchange = () => { opts.tomtom = $('optTomtom').value.trim(); LS.set('opts', opts); setTrafBtn(); applyTraffic(); toast(opts.tomtom ? 'Đã lưu mã TomTom: chỉ đường sẽ tính kẹt xe, tai nạn' : 'Đã bỏ mã TomTom', true); if (opts.tomtom) loadIncidents(); };
+$('optTrafWarn').onchange = () => { opts.trafWarn = $('optTrafWarn').checked; LS.set('opts', opts); };
+const TT_MAN = {TURN_LEFT:15,TURN_RIGHT:10,BEAR_LEFT:16,BEAR_RIGHT:9,KEEP_LEFT:24,KEEP_RIGHT:23,SHARP_LEFT:14,SHARP_RIGHT:11,MAKE_UTURN:12,TRY_MAKE_UTURN:12,STRAIGHT:8,
+  ENTER_MOTORWAY:25,ENTER_FREEWAY:25,ENTER_HIGHWAY:25,TAKE_EXIT:20,MOTORWAY_EXIT_LEFT:21,MOTORWAY_EXIT_RIGHT:20,TAKE_FERRY:28,DEPART:1,ARRIVE:4,ARRIVE_LEFT:6,ARRIVE_RIGHT:5,WAYPOINT_REACHED:4,WAYPOINT_LEFT:4,WAYPOINT_RIGHT:4,
+  ROUNDABOUT_CROSS:26,ROUNDABOUT_LEFT:26,ROUNDABOUT_RIGHT:26,ROUNDABOUT_BACK:26,SWITCH_PARALLEL_ROAD:8,SWITCH_MAIN_ROAD:8,ENTRANCE_RAMP:25,FOLLOW:8};
+function ttConv(rt, nLegs){
+  const coords = [], legEnds = [];
+  rt.legs.forEach(l => { const c = l.points.map(q => [q.longitude, q.latitude]); if (coords.length) c.shift(); coords.push(...c); legEnds.push(coords.length-1); });
+  const mans = []; let stopN = 0;
+  ((rt.guidance && rt.guidance.instructions) || []).forEach(ins => {
+    const type = TT_MAN[ins.maneuver] || 8; if (type===8 && !/STRAIGHT|FOLLOW/.test(ins.maneuver||'') && ins.maneuver) return;
+    const mm = {idx:Math.min(ins.pointIndex||0, coords.length-1), type, street:ins.street || ins.roadNumbers && ins.roadNumbers[0] || '', exitN:ins.roundaboutExitNumber || 0};
+    if (/^WAYPOINT/.test(ins.maneuver)){ stopN++; mm.stop = LET(stopN); }
+    mans.push(mm);
+  });
+  if (!mans.length || mans[0].type > 3) mans.unshift({idx:0, type:1, street:'', exitN:0});
+  if (!isArrive(mans[mans.length-1])) mans.push({idx:coords.length-1, type:4, street:'', exitN:0});
+  const s = rt.summary;
+  return {coords, mans, legEnds, totalM:s.lengthInMeters, totalS:s.travelTimeInSeconds, delayS:s.trafficDelayInSeconds||0, traffic:true};
+}
+async function ttRoutes(list, alts){
+  const loc = list.map(p => p.lat.toFixed(6) + ',' + p.lon.toFixed(6)).join(':');
+  const q = `key=${encodeURIComponent(opts.tomtom)}&traffic=true&routeType=fastest&travelMode=${opts.veh==='moto' ? 'motorcycle' : 'car'}&instructionsType=coded&language=vi-VN&sectionType=traffic${alts ? '&maxAlternatives=' + alts : ''}`;
+  const ctl = new AbortController(); const to2 = setTimeout(()=>ctl.abort(), 12000);
+  const r = await fetch(`${TT}/routing/1/calculateRoute/${loc}/json?${q}`, {signal:ctl.signal}); clearTimeout(to2);
+  const j = await r.json(); if (!j.routes || !j.routes.length) throw new Error('TomTom không có lộ trình');
+  return j.routes.map(rt => ttConv(rt, list.length-1));
+}
+async function fetchTomtom(list){ return (await ttRoutes(list, 0))[0]; }
+function nearRoute(r, p, from, tol){
+  const C = r.coords; let bd = 1e9, bi = -1;
+  for (let i=Math.max(0,from);i<C.length-1;i++){ const d = segDist(p, {lon:C[i][0],lat:C[i][1]}, {lon:C[i+1][0],lat:C[i+1][1]}); if (d < bd){ bd = d; bi = i; } }
+  return bd <= tol ? bi : -1;
+}
+async function loadIncidents(){
+  if (!opts.tomtom || trafBusy) return; trafBusy = true;
+  try{
+    let b;
+    if (nav){ const C = nav.coords.slice(nav.cur, nav.cur + 2500); b = C.reduce((bb,c)=>[Math.min(bb[0],c[0]),Math.min(bb[1],c[1]),Math.max(bb[2],c[0]),Math.max(bb[3],c[1])], [180,90,-180,-90]); }
+    else { const c = map.getCenter(); b = [c.lng-0.06, c.lat-0.06, c.lng+0.06, c.lat+0.06]; }
+    if ((b[2]-b[0])*(b[3]-b[1]) > 0.8){ const cx = (b[0]+b[2])/2, cy = (b[1]+b[3])/2; b = [cx-0.45, cy-0.45, cx+0.45, cy+0.45]; }
+    b = [b[0]-0.005, b[1]-0.005, b[2]+0.005, b[3]+0.005];
+    const fields = '{incidents{type,geometry{type,coordinates},properties{id,iconCategory,magnitudeOfDelay,events{description},from,to,length,delay}}}';
+    const r = await fetch(`${TT}/traffic/services/5/incidentDetails?key=${encodeURIComponent(opts.tomtom)}&bbox=${b.map(x=>x.toFixed(5)).join(',')}&fields=${encodeURIComponent(fields)}&language=vi-VN&timeValidityFilter=present`);
+    const j = await r.json(); const list = (j.incidents || []).map(f => {
+      const g = f.geometry, pr = f.properties || {}; const cs = g.type === 'Point' ? [g.coordinates] : g.coordinates;
+      return {id:pr.id || cs[0].join(','), cat:pr.iconCategory||0, mag:pr.magnitudeOfDelay||0, delay:pr.delay||0, len:pr.length||0, from:pr.from||'', to:pr.to||'',
+        desc:(pr.events && pr.events[0] && pr.events[0].description) || '', pts:cs.map(c => ({lon:c[0], lat:c[1]}))};
+    });
+    drawIncidents(list);
+    incOnRoute = [];
+    if (nav) list.forEach(it => {
+      let hit = -1; for (const p of it.pts.filter((_,k,a)=> k % Math.max(1, Math.floor(a.length/12)) === 0 || k === a.length-1)){ hit = nearRoute(nav, p, nav.cur, 35); if (hit >= 0) break; }
+      if (hit >= 0) incOnRoute.push(Object.assign(it, {at: nav.cum[hit]}));
+    });
+    incOnRoute.sort((a,b2)=>a.at-b2.at);
+  }catch(e){}
+  trafBusy = false;
+}
+function drawIncidents(list){
+  incMarkers.splice(0).forEach(m=>m.remove());
+  if (!trafOn && !nav) return;
+  list.slice(0, 120).forEach(it => {
+    const [ico, nm] = INC[it.cat] || INC[0]; const el = document.createElement('div'); el.className = 'incMk'; el.textContent = ico;
+    if (it.mag >= 3) el.style.borderColor = '#b71c1c'; else if (it.mag <= 1) el.style.borderColor = '#f0a500';
+    const pop = `<b>${ico} ${nm}</b>${it.desc ? '<br><small>' + escapeHtml(it.desc) + '</small>' : ''}${it.from ? '<br><small>' + escapeHtml(it.from + (it.to ? ' → ' + it.to : '')) + '</small>' : ''}${it.delay > 30 ? '<br><small>Chậm thêm khoảng ' + fmtTime(it.delay) + '</small>' : ''}`;
+    const p = it.pts[Math.floor(it.pts.length/2)];
+    incMarkers.push(new maplibregl.Marker({element:el}).setLngLat([p.lon, p.lat]).setPopup(new maplibregl.Popup({offset:14, maxWidth:'240px'}).setHTML(pop)).addTo(map));
+  });
+}
+function trafTick(along){
+  if (!nav || !opts.tomtom || opts.trafWarn === false) return;
+  // nhắc sự cố phía trước trên lộ trình
+  const ahead = incOnRoute.find(it => it.at > along - 20 && it.at - along < 3000 && !incSaid[it.id]);
+  if (ahead){
+    incSaid[ahead.id] = true; const [, nm] = INC[ahead.cat] || INC[0]; const dm = Math.max(50, ahead.at - along);
+    speak('Phía trước ' + sayDist(dm) + ' có ' + nm.toLowerCase() + (ahead.len > 300 ? ', dài khoảng ' + sayDist(ahead.len) : '') + (ahead.delay > 60 ? ', chậm thêm khoảng ' + fmtTime(ahead.delay) : ''), true);
+    toast((INC[ahead.cat] || INC[0])[0] + ' Phía trước ' + fmtDist(dm) + ': ' + nm + (ahead.delay > 60 ? ', chậm thêm ' + fmtTime(ahead.delay) : ''));
+    if (!altRoute) trafCheckAt = 0;
+  }
+  if (Date.now() - trafCheckAt < 150000) return;
+  trafCheckAt = Date.now();
+  loadIncidents().then(checkFaster);
+}
+async function checkFaster(){
+  if (!nav || !pos || altRoute || !$('trafAlert').hidden) return;
+  const C = nav.coords, cur = nav.cur;
+  const along = nav.cum[cur] || 0, remainM = Math.max(0, nav.totalM - along);
+  if (remainM < 1500) return;
+  const rest = nav.pts.slice(1).filter((p,k) => k === nav.pts.length-2 || (nav.stopAt[k] || 0) > along + 30);
+  const list = [{lat:pos.lat, lon:pos.lon, name:'Vị trí của tôi', me:true}].concat(rest);
+  let routes; try{ routes = await ttRoutes(list, 2); }catch(e){ return; }
+  if (!nav) return;
+  // thời gian còn lại của tuyến đang đi, cộng thêm chậm trễ do sự cố trên tuyến
+  const curS = nav.totalS * remainM / Math.max(nav.totalM, 1) + incOnRoute.filter(it => it.at > along).reduce((s,it)=>s + (it.delay||0), 0);
+  // tuyến nào trùng phần lớn tuyến hiện tại thì coi như cùng đường, lấy làm thước đo thời gian thật
+  const same = r => { const C2 = r.coords, step = Math.max(1, Math.floor(C2.length/40)); let n = 0, k = 0; for (let i=0;i<C2.length;i+=step){ k++; if (nearRoute(nav, {lon:C2[i][0], lat:C2[i][1]}, Math.max(0,cur-5), 30) >= 0) n++; } return n / Math.max(k,1); };
+  let base = curS; const sameR = routes.find(r => same(r) > 0.85); if (sameR) base = Math.max(base, sameR.totalS);
+  const best = routes.filter(r => same(r) < 0.8).sort((a,b)=>a.totalS-b.totalS)[0];
+  if (!best) return;
+  const save = base - best.totalS; if (save < 180) return;
+  altRoute = {r:best, list};
+  const mins = Math.round(save/60);
+  $('trafTitle').textContent = '🚦 Có đường khác nhanh hơn khoảng ' + mins + ' phút';
+  $('trafText').textContent = (incOnRoute.length ? 'Tuyến đang đi có ' + incOnRoute.map(it => (INC[it.cat]||INC[0])[1].toLowerCase()).filter((v,i,a)=>a.indexOf(v)===i).join(', ') + '. ' : 'Tuyến đang đi đông xe. ') + 'Đường mới: ' + fmtDist(best.totalM) + ', khoảng ' + fmtTime(best.totalS) + '.';
+  $('trafAlert').hidden = false;
+  speak('Phía trước đông xe. Có đường khác nhanh hơn khoảng ' + mins + ' phút. Đồng chí bấm Đổi đường nếu muốn đi đường mới', true);
+  clearTimeout(checkFaster.t); checkFaster.t = setTimeout(() => { $('trafAlert').hidden = true; altRoute = null; }, 30000);
+}
+$('trafYes').onclick = () => {
+  if (!altRoute) return; const {r, list} = altRoute; altRoute = null; $('trafAlert').hidden = true;
+  plan = prepRoute(r); plan.pts = list; nav = Object.assign(plan, {cur:0, said:{}, joined:true}); drawRoute(nav); incSaid = {}; incOnRoute = [];
+  speak('Đã đổi sang đường nhanh hơn'); loadIncidents();
+};
+$('trafNo').onclick = () => { altRoute = null; $('trafAlert').hidden = true; trafCheckAt = Date.now() + 300000; };
+map.on('moveend', () => { if (opts.tomtom && trafOn && !nav){ clearTimeout(loadIncidents.t); loadIncidents.t = setTimeout(loadIncidents, 800); } });
+setTrafBtn();
+
 /* ---------- Khởi động ---------- */
+// nhận mã qua đường link riêng: …/#tt=MÃ&goong=MÃ (lưu vào máy rồi xoá khỏi địa chỉ)
+(() => { try{ const h = new URLSearchParams(location.hash.slice(1)); let ok = [];
+  if (h.get('tt')){ opts.tomtom = h.get('tt').trim(); ok.push('TomTom'); } if (h.get('goong')){ opts.goong = h.get('goong').trim(); ok.push('Goong'); }
+  if (ok.length){ LS.set('opts', opts); history.replaceState(null, '', location.pathname + location.search); setTrafBtn(); setTimeout(()=>{ applyTraffic(); toast('Đã cài mã ' + ok.join(', ') + ' vào máy. Lần sau không cần nhập lại.', true); }, 1500); }
+}catch(e){} })();
 let wakeLock = null;
 async function keepAwake(){ try{ if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); }catch(e){} }
 document.addEventListener('visibilitychange', () => { if (document.visibilityState==='visible') keepAwake(); });
@@ -1143,7 +1541,7 @@ function hhmm(d){ return d.toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'
 function setStatus(s){ $('status').textContent = s; }
 let toastT = null;
 function toast(s, info){ const t = $('toast'); t.textContent = s; t.className = info ? 'info' : ''; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(()=>t.hidden=true, 3200); }
-$('clock').textContent = hhmm(new Date()); setSoundBtn(); setStatus('Phiên bản 15/11e (nhắc biển cấm rẽ, quay đầu, dừng đỗ). Bấm Bắt đầu hành trình.');
+$('clock').textContent = hhmm(new Date()); setSoundBtn(); setStatus('Phiên bản 15/11g (ghim kéo xem địa chỉ, kẹt xe, bong bóng tìm kiếm). Bấm Bắt đầu hành trình.');
 window.__app = {map, update, onPos, parseData, drawData, get state(){ return {pos, speedKmh, heading, curLimit, ways:ways.length, cams:cams.length}; }};
 })();
 </script>
