@@ -289,17 +289,28 @@ async function loadData(p, force){
   )->.c; .c out;
   relation["type"="enforcement"](${bb})->.e; .e out tags; node(r.e:"device")->.d; .d out;`;
   let data = null, err = null;
-  for (const url of OVERPASS){
+  // Gửi song song tới tất cả máy chủ, lấy máy trả lời đầu tiên
+  const ctls = OVERPASS.map(()=>new AbortController());
+  const tries = OVERPASS.map((url,i) => (async () => {
+    const to = setTimeout(()=>ctls[i].abort(), 25000);
     try{
-      const ctl = new AbortController(); const to = setTimeout(()=>ctl.abort(), 35000);
-      const res = await fetch(url, {method:'POST', body:'data='+encodeURIComponent(q), headers:{'Content-Type':'application/x-www-form-urlencoded'}, signal:ctl.signal});
-      clearTimeout(to);
+      const res = await fetch(url, {method:'POST', body:'data='+encodeURIComponent(q), headers:{'Content-Type':'application/x-www-form-urlencoded'}, signal:ctls[i].signal});
       if (!res.ok) throw new Error('HTTP '+res.status);
-      data = await res.json(); break;
-    }catch(e){ err = e; }
-  }
+      const j = await res.json(); if (!j || !Array.isArray(j.elements)) throw new Error('dữ liệu lỗi');
+      return j;
+    } finally { clearTimeout(to); }
+  })());
+  try{ data = await Promise.any(tries); ctls.forEach(c=>{ try{ c.abort(); }catch(e){} }); }
+  catch(e){ err = (e.errors && e.errors[0]) || e; }
   loading = false;
-  if (!data){ setStatus('Chưa tải được dữ liệu ('+(err&&err.message||'mất mạng')+'), thử lại sau 30 giây'); setTimeout(()=>{ loaded=null; }, 30000); loaded = {p, t:Date.now()-RELOAD_AGE+30000}; return; }
+  if (!data){
+    // Dùng tạm dữ liệu đã lưu lần trước nếu còn gần vị trí
+    const cache = LS.get('cache', null);
+    if (cache && !ways.length && dist(cache.p, p) < LOAD_RADIUS){ parseData(cache.d); drawData(); update(); }
+    setStatus('Máy chủ dữ liệu đang chậm, '+(ways.length?'dùng dữ liệu đã lưu, ':'')+'tự thử lại sau 20 giây');
+    loaded = {p, t:Date.now()-RELOAD_AGE+20000}; return;
+  }
+  try{ const sz = JSON.stringify(data); if (sz.length < 3e6) localStorage.setItem('cache', JSON.stringify({p, d:data})); }catch(e){}
   parseData(data); loaded = {p, t:Date.now()};
   setStatus(`Dữ liệu: ${ways.length} đoạn đường, ${cams.length} camera OSM, ${userCams.length} camera tự báo · cập nhật ${hhmm(new Date())}`);
   drawData(); update();
