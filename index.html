@@ -873,7 +873,14 @@ async function search(){
       const lo = same.filter(h=>h.n<=n0).sort((a,b)=>b.n-a.n)[0], hi = same.filter(h=>h.n>=n0).sort((a,b)=>a.n-b.n)[0];
       if (lo && hi && lo.n !== hi.n && dist(lo.it, hi.it) < 3000){ const t = (n0-lo.n)/(hi.n-lo.n);
         items.push({lat:lo.it.lat+(hi.it.lat-lo.it.lat)*t, lon:lo.it.lon+(hi.it.lon-lo.it.lon)*t, name:'≈ Số ' + numFull + ' ' + street, addr:'Ước tính giữa hẻm ' + lo.n + ' và hẻm ' + hi.n + (lo.it.area ? ', ' + lo.it.area : ''), tag:'Ước tính'}); }
-      else if (lo || hi){ const h = lo || hi; if (Math.abs(h.n - n0) <= 40) items.push(Object.assign({}, h.it, {name:'≈ Số ' + numFull + ' ' + street, addr:'Gần ' + h.it.name + ' (ước tính)' + (h.it.area ? ', ' + h.it.area : ''), tag:'Ước tính'})); }
+      else if (same.length >= 2){
+        // chỉ có hẻm ở một phía: ngoại suy theo hai hẻm gần nhất
+        const two = same.slice().sort((a,b)=>Math.abs(a.n-n0)-Math.abs(b.n-n0)).filter((h,k,arr)=>arr.findIndex(x=>x.n===h.n)===k).slice(0,2).sort((a,b)=>a.n-b.n);
+        const t = two[1].n !== two[0].n ? (n0-two[0].n)/(two[1].n-two[0].n) : 0;
+        if (two.length===2 && Math.abs(t) <= 1.2 && dist(two[0].it, two[1].it) < 3000)
+          items.push({lat:two[0].it.lat+(two[1].it.lat-two[0].it.lat)*t, lon:two[0].it.lon+(two[1].it.lon-two[0].it.lon)*t, name:'≈ Số ' + numFull + ' ' + street, addr:'Ước tính theo hẻm ' + two[0].n + ' và hẻm ' + two[1].n + (two[0].it.area ? ', ' + two[0].it.area : ''), tag:'Ước tính'});
+      }
+      if (!items.some(x=>x.tag==='Ước tính') && (lo || hi)){ const h = lo || hi; if (Math.abs(h.n - n0) <= 150) items.push(Object.assign({}, h.it, {name:'≈ Số ' + numFull + ' ' + street, addr:'Gần ' + h.it.name + ' (ước tính)' + (h.it.area ? ', ' + h.it.area : ''), tag:'Ước tính'})); }
     }
     res.flat().filter(it => it.key==='highway' && normSt(it.name) === ns).forEach(it => items.push(Object.assign({}, it, {name: it.name, addr:(it.area || '') + ' · bản đồ chưa có số ' + numFull + ', bấm 📍 để chọn đúng nhà'})));
   }
