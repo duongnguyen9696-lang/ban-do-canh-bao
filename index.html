@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="Cảnh báo GT">
 <meta name="theme-color" content="#0f2442">
 <title>Bản đồ cảnh báo giao thông</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" crossorigin="">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;800&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
 <style>
@@ -25,8 +25,12 @@
 [hidden]{display:none!important}
 html,body{height:100%;margin:0;background:var(--navy);color:var(--fg);font-family:var(--f-body);overflow:hidden}
 #map{position:fixed;inset:0;background:#0b1a30}
-.leaflet-control-attribution{font-size:9px;background:rgba(0,0,0,.45)!important;color:#ccc!important}
-.leaflet-control-attribution a{color:#cde!important}
+.maplibregl-ctrl-attrib{font-size:9px;background:rgba(0,0,0,.45)!important;color:#ccc!important}
+.maplibregl-ctrl-attrib a{color:#cde!important}
+.maplibregl-ctrl-bottom-left,.maplibregl-ctrl-bottom-right{bottom:calc(var(--sb) + 130px)}
+.maplibregl-popup-content{background:#13294a;color:var(--fg);font:13px var(--f-body);border-radius:10px}
+.maplibregl-popup-tip{border-top-color:#13294a!important;border-bottom-color:#13294a!important}
+#mode3d{position:fixed;right:max(12px,calc(var(--sr) + 12px));bottom:calc(var(--sb) + 262px);z-index:1000;width:48px;height:48px;border-radius:50%;border:none;background:#fff;color:#1a73e8;box-shadow:0 3px 10px rgba(0,0,0,.4);font:800 15px var(--f-body);cursor:pointer}
 
 /* Bảng điều khiển trên cùng (kiểu đồng hồ) */
 #hud{position:fixed;left:0;right:0;top:0;z-index:1000;padding:calc(var(--st) + 8px) max(12px,var(--sr)) 10px max(12px,var(--sl));
@@ -83,6 +87,29 @@ html,body{height:100%;margin:0;background:var(--navy);color:var(--fg);font-famil
 .list div{display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)}
 .list button{background:none;border:1px solid #a33;color:#f88;border-radius:8px;padding:2px 8px;font-size:12px}
 
+#searchPill{position:fixed;left:max(12px,calc(var(--sl) + 12px));right:max(12px,calc(var(--sr) + 12px));top:calc(var(--st) + 128px);z-index:999;display:flex;align-items:center;gap:10px;background:#fff;color:#444;border:none;border-radius:26px;padding:12px 16px;font:500 15px var(--f-body);box-shadow:0 3px 12px rgba(0,0,0,.35);cursor:pointer;text-align:left}
+#searchPill svg{flex:none}
+#navBan{position:fixed;left:max(10px,calc(var(--sl) + 10px));right:max(10px,calc(var(--sr) + 10px));top:calc(var(--st) + 124px);z-index:999;display:flex;align-items:center;gap:12px;background:#0d6e3f;color:#fff;border-radius:16px;padding:10px 14px;box-shadow:0 4px 14px rgba(0,0,0,.4)}
+#navBan .arrow{width:48px;height:48px;flex:none;display:grid;place-items:center}
+#navBan b{display:block;font-family:var(--f-num);font-size:30px;line-height:1}
+#navBan span{display:block;font-size:14px;font-weight:600;line-height:1.3;margin-top:2px}
+#navBan .then{font-size:11.5px;opacity:.85;font-weight:500}
+#navInfo{position:fixed;left:max(10px,calc(var(--sl) + 10px));right:calc(var(--sr) + 72px);bottom:calc(var(--sb) + 140px);z-index:999;display:flex;align-items:center;justify-content:space-between;gap:10px;background:#fff;color:#222;border-radius:14px;padding:10px 12px 10px 16px;box-shadow:0 3px 12px rgba(0,0,0,.35)}
+#navInfo b{font-size:18px;color:#0d6e3f}
+#navInfo small{display:block;color:#555;font-size:12.5px}
+#navInfo button{border:none;background:#c8371f;color:#fff;border-radius:10px;padding:10px 14px;font:700 13px var(--f-body)}
+.seg{display:flex;gap:6px;margin:10px 0}
+.seg button{flex:1;padding:10px;border-radius:10px;border:1px solid var(--line);background:#0c1d36;color:var(--fg);font:600 14px var(--f-body)}
+.seg button.on{background:#2f6fd6;border-color:#6aa0ff}
+.results{margin-top:8px}
+.results button{display:block;width:100%;text-align:left;background:none;border:none;border-bottom:1px solid var(--line);color:var(--fg);padding:11px 2px;font:14px var(--f-body);cursor:pointer}
+.results button small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+.routeSum{background:#0c1d36;border-radius:12px;padding:12px;margin-top:10px}
+.routeSum b{font-size:20px;color:var(--green)}
+.steps{max-height:30vh;overflow:auto;font-size:13px;margin-top:8px}
+.steps div{padding:6px 0;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:8px}
+.steps div span:last-child{color:var(--muted);white-space:nowrap}
+.destMk{width:30px;height:30px}
 #toast{position:fixed;left:50%;transform:translateX(-50%);top:calc(var(--st) + 120px);z-index:3000;background:rgba(200,55,31,.95);color:#fff;padding:10px 16px;border-radius:12px;font-weight:600;font-size:14px;max-width:90vw;text-align:center;box-shadow:0 6px 20px rgba(0,0,0,.4)}
 #toast.info{background:rgba(31,138,76,.95)}
 
@@ -92,7 +119,6 @@ html,body{height:100%;margin:0;background:var(--navy);color:var(--fg);font-famil
 #start .btn{width:100%;max-width:340px;min-height:52px;font-size:15px;flex-direction:row;justify-content:center;margin-top:10px}
 
 .me{width:22px;height:22px}
-.me svg{transition:transform .3s}
 .camMk{width:26px;height:26px;background:#2f6fd6;border:2px solid #fff;display:grid;place-items:center;box-shadow:0 2px 6px rgba(0,0,0,.5)}
 .camMk.red{background:#c8371f}.camMk.user{background:#8b3fd1}
 @media (prefers-reduced-motion:reduce){.sign.flash,.cam.near .ico{animation:none}}
@@ -116,6 +142,7 @@ html,body{height:100%;margin:0;background:var(--navy);color:var(--fg);font-famil
 </div>
 
 <button id="layers" aria-label="Đổi lớp bản đồ" title="Đổi lớp bản đồ"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/></svg></button>
+<button id="mode3d" aria-label="Đổi 2D hoặc 3D" title="Đổi 2D, 3D">3D</button>
 <button id="recenter" aria-label="Về vị trí của tôi" title="Bám theo vị trí"><svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor"><path d="M12 2 4.5 20.3l.7.7L12 18l6.8 3 .7-.7z"/></svg></button>
 
 <div id="bar">
@@ -134,6 +161,9 @@ html,body{height:100%;margin:0;background:var(--navy);color:var(--fg);font-famil
   <div id="status">Đang khởi động…</div>
 </div>
 
+<button id="searchPill" aria-label="Tìm điểm đến"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#1a73e8" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><span>Đi đến đâu? Tìm điểm đến</span></button>
+<div id="navBan" hidden><div class="arrow" id="navArrow"></div><div style="min-width:0"><b id="navDist">--</b><span id="navText">--</span><span class="then" id="navThen"></span></div></div>
+<div id="navInfo" hidden><div><b id="navRemain">--</b><small id="navEta">--</small></div><div style="display:flex;gap:6px"><button id="navMute" style="background:#2f6fd6">Lộ trình</button><button id="navStop">Kết thúc</button></div></div>
 <div id="toast" hidden></div>
 
 <!-- Màn hình bắt đầu -->
@@ -144,6 +174,20 @@ html,body{height:100%;margin:0;background:var(--navy);color:var(--fg);font-famil
   <button class="btn primary" id="bGo"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 4.5 20.3l.7.7L12 18l6.8 3 .7-.7z"/></svg>Bắt đầu hành trình</button>
   <p style="font-size:11.5px;margin-top:16px">Ứng dụng sẽ xin quyền vị trí, cảm biến nghiêng. Giữ màn hình sáng trong khi lái xe.</p>
 </div>
+
+<!-- Tìm điểm đến, chỉ đường -->
+<div class="sheet" id="routeSheet" hidden><div class="box">
+  <h3>Chỉ đường</h3>
+  <div class="seg" role="group" aria-label="Phương tiện"><button id="vCar">Ô tô</button><button id="vMoto">Xe máy</button></div>
+  <label for="destQ">Điểm đến</label>
+  <input id="destQ" type="search" placeholder="Nhập tên đường, địa điểm, số nhà…" autocomplete="off" enterkeyhint="search">
+  <div class="results" id="destResults"></div>
+  <div id="routeBox" hidden>
+    <div class="routeSum"><b id="rsTime">--</b> · <span id="rsDist">--</span><br><small id="rsTo" style="color:var(--muted)"></small></div>
+    <div class="steps" id="rsSteps"></div>
+  </div>
+  <div class="row"><button class="btn" id="routeClose">Đóng</button><button class="btn primary" id="routeGo" hidden>Bắt đầu đi</button></div>
+</div></div>
 
 <!-- Báo camera -->
 <div class="sheet" id="addSheet" hidden><div class="box">
@@ -177,6 +221,14 @@ html,body{height:100%;margin:0;background:var(--navy);color:var(--fg);font-famil
   <select id="optTol"><option value="0">Ngay khi vượt</option><option value="3" selected>3 km/h</option><option value="5">5 km/h</option></select>
   <label for="optArea">Khu vực khi đường chưa có biển trên dữ liệu</label>
   <select id="optArea"><option value="urban">Trong khu đông dân cư</option><option value="rural">Ngoài khu đông dân cư</option></select>
+  <label for="optVoice">Giọng nói cảnh báo</label>
+  <select id="optVoice"><option value="">Tự động (giọng tiếng Việt của máy)</option></select>
+  <label for="optRate">Tốc độ đọc: <span id="rateVal">1,0</span></label>
+  <input id="optRate" type="range" min="0.6" max="1.6" step="0.1" value="1">
+  <label for="optVol">Âm lượng giọng nói: <span id="volVal">100</span>%</label>
+  <input id="optVol" type="range" min="0.2" max="1" step="0.1" value="1">
+  <div class="row" style="margin-top:8px"><button class="btn" id="bVoiceTest">Nghe thử giọng</button></div>
+  <p style="font-size:11.5px">Trên iPhone có thể tải thêm giọng tiếng Việt tại Cài đặt > Trợ năng > Nội dung được đọc > Giọng nói > Tiếng Việt (ví dụ Linh, giọng Nâng cao). Tải xong mở lại ứng dụng để thấy giọng mới.</p>
   <div class="row"><button class="btn" id="bRefresh">Tải lại dữ liệu</button><button class="btn" id="bGmaps">Mở Google Maps</button></div>
   <h3 style="margin-top:20px">Camera do đồng chí báo (<span id="userCount">0</span>)</h3>
   <div class="list" id="userList"></div>
@@ -186,7 +238,7 @@ html,body{height:100%;margin:0;background:var(--navy);color:var(--fg);font-famil
   <div class="row"><button class="btn primary" id="menuClose">Đóng</button></div>
 </div></div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js" crossorigin=""></script>
 <script>
 (() => {
 'use strict';
@@ -203,27 +255,73 @@ const RELOAD_DIST = 1000;      // m, đi xa tâm vùng quá mức này thì tả
 const RELOAD_AGE = 10*60e3;    // ms, dữ liệu cũ quá 10 phút thì tải lại
 const opts = Object.assign({veh:'car', warn:500, tol:3, area:'urban', sound:true}, LS.get('opts', {}));
 
-/* ---------- Bản đồ ---------- */
-const map = L.map('map', {zoomControl:false, attributionControl:true}).setView([10.7525, 106.6330], 16);
-const esriSat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {maxZoom:19, maxNativeZoom:18, attribution:'Ảnh vệ tinh © Esri'});
-const esriRoads = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}', {maxZoom:19, maxNativeZoom:18});
-const esriLabels = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {maxZoom:19, maxNativeZoom:18});
-const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:19, attribution:'© OpenStreetMap'});
-const hybrid = L.layerGroup([esriSat, esriRoads, esriLabels]);
-const bases = [hybrid, osm]; let baseIdx = LS.get('base', 0) % bases.length;
-bases[baseIdx].addTo(map);
-map.attributionControl.setPrefix(false);
-map.attributionControl.addAttribution('Dữ liệu biển báo, camera © OpenStreetMap');
-$('layers').onclick = () => { map.removeLayer(bases[baseIdx]); baseIdx = (baseIdx+1)%bases.length; bases[baseIdx].addTo(map); LS.set('base', baseIdx); toast(baseIdx ? 'Bản đồ đường phố' : 'Bản đồ vệ tinh', true); };
+/* ---------- Bản đồ (MapLibre GL, WebGL, có 3D) ---------- */
+const ESRI = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+const FALLBACK_STYLE = {version:8, glyphs:'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf', sources:{}, layers:[{id:'bg', type:'background', paint:{'background-color':'#0b1a30'}}]};
+let sat = LS.get('base', 0) === 0;          // true: vệ tinh, false: đường phố
+let is3d = LS.get('is3d', true);
+const map = new maplibregl.Map({
+  container:'map', style:'https://tiles.openfreemap.org/styles/liberty',
+  center:[106.6330, 10.7525], zoom:16, pitch: is3d ? 60 : 0, maxPitch:75,
+  attributionControl:false, fadeDuration:0, antialias:false, renderWorldCopies:false
+});
+map.addControl(new maplibregl.AttributionControl({compact:true, customAttribution:'Ảnh vệ tinh © Esri · Biển báo, camera © OpenStreetMap'}), 'bottom-left');
+let styleTimer = setTimeout(() => { if (!map.isStyleLoaded()){ map.setStyle(FALLBACK_STYLE); sat = true; } }, 12000);
 
-const roadLayer = L.layerGroup().addTo(map);
-const camLayer = L.layerGroup().addTo(map);
-const meIcon = L.divIcon({className:'me', iconSize:[30,30], iconAnchor:[15,15], html:'<svg viewBox="0 0 30 30" width="30" height="30"><circle cx="15" cy="15" r="13" fill="rgba(26,115,232,.25)"/><path d="M15 4 8 24l7-4 7 4z" fill="#1a73e8" stroke="#fff" stroke-width="2"/></svg>'});
-const me = L.marker([0,0], {icon:meIcon, interactive:false, zIndexOffset:1000});
-const accCircle = L.circle([0,0], {radius:10, color:'#1a73e8', weight:1, fillOpacity:.08, interactive:false});
+function firstLineLayer(){ const ls = map.getStyle().layers; const l = ls.find(x => x.type==='line' || x.type==='symbol' || x.type==='fill-extrusion'); return l && l.id; }
+function setupLayers(){
+  clearTimeout(styleTimer);
+  if (!map.getSource('esri')) map.addSource('esri', {type:'raster', tiles:[ESRI], tileSize:256, maxzoom:18, attribution:''});
+  if (!map.getLayer('esri')) map.addLayer({id:'esri', type:'raster', source:'esri', paint:{'raster-fade-duration':0}}, firstLineLayer());
+  // nhà 3D (nếu kiểu bản đồ có nguồn openmaptiles)
+  const src = map.getStyle().sources;
+  if (src.openmaptiles && !map.getLayer('nha-3d')){
+    map.getStyle().layers.filter(l=>l.type==='fill-extrusion').forEach(l=>map.removeLayer(l.id));
+    map.addLayer({id:'nha-3d', type:'fill-extrusion', source:'openmaptiles', 'source-layer':'building', minzoom:14,
+      paint:{'fill-extrusion-color':['interpolate',['linear'],['coalesce',['get','render_height'],8],0,'#c9d3e0',40,'#9fb3cf',120,'#7f95b5'],
+        'fill-extrusion-height':['coalesce',['get','render_height'],8], 'fill-extrusion-base':['coalesce',['get','render_min_height'],0], 'fill-extrusion-opacity':0.85}});
+  }
+  if (!map.getSource('roads')) map.addSource('roads', {type:'geojson', data:{type:'FeatureCollection', features:[]}});
+  if (!map.getLayer('roads')) map.addLayer({id:'roads', type:'line', source:'roads', layout:{'line-cap':'round','line-join':'round'},
+    paint:{'line-color':['get','col'], 'line-width':['interpolate',['linear'],['zoom'],13,2,18,6], 'line-opacity':0.7}}, map.getLayer('nha-3d') ? 'nha-3d' : undefined);
+  applyBase();
+}
+const fillOrig = new Map();
+function applyBase(){
+  if (!map.getLayer('esri')) return;
+  map.setLayoutProperty('esri', 'visibility', sat ? 'visible' : 'none');
+  // ở chế độ vệ tinh: làm mờ vùng tô nền để thấy ảnh, giữ đường và nhãn
+  map.getStyle().layers.forEach(l => { if (l.type==='fill'){
+    if (!fillOrig.has(l.id)) fillOrig.set(l.id, l.paint && l.paint['fill-opacity']!==undefined ? l.paint['fill-opacity'] : 1);
+    try{ map.setPaintProperty(l.id, 'fill-opacity', sat ? 0 : fillOrig.get(l.id)); }catch(e){} } });
+}
+map.on('load', setupLayers);
+map.on('styledata', () => { if (map.isStyleLoaded() && !map.getLayer('esri')) setupLayers(); });
+$('layers').onclick = () => { sat = !sat; LS.set('base', sat?0:1); applyBase(); toast(sat ? 'Bản đồ vệ tinh' : 'Bản đồ đường phố', true); };
+function set3dBtn(){ $('mode3d').textContent = is3d ? '2D' : '3D'; }
+$('mode3d').onclick = () => { is3d = !is3d; LS.set('is3d', is3d); set3dBtn(); map.easeTo({pitch: is3d ? 60 : 0, bearing: is3d && heading!=null ? heading : 0, duration:600}); };
+set3dBtn();
+
+const camMarkers = [];
+const meEl = document.createElement('div'); meEl.className = 'me';
+meEl.innerHTML = '<svg viewBox="0 0 30 30" width="34" height="34"><circle cx="15" cy="15" r="13" fill="rgba(26,115,232,.25)"/><path d="M15 4 8 24l7-4 7 4z" fill="#1a73e8" stroke="#fff" stroke-width="2"/></svg>';
+const me = new maplibregl.Marker({element:meEl, rotationAlignment:'map', pitchAlignment:'map'});
+let meAdded = false;
 let follow = true;
 map.on('dragstart', () => { follow = false; $('recenter').classList.add('off'); });
-$('recenter').onclick = () => { follow = true; $('recenter').classList.remove('off'); if (pos) map.setView([pos.lat,pos.lon], Math.max(map.getZoom(),16)); };
+$('recenter').onclick = () => { follow = true; $('recenter').classList.remove('off'); if (pos) followCam(true); };
+function followCam(force){
+  if (!pos) return;
+  const hudH = $('hud').offsetHeight, barH = $('bar').offsetHeight;
+  const opts2 = {center:[pos.lon,pos.lat], padding:{top: hudH + (is3d ? Math.round(innerHeight*0.25) : 0), bottom: barH, left:0, right:0}, duration: force ? 600 : 950, easing: t=>t, essential:true};
+  if (is3d){ opts2.pitch = 60; if (heading!=null) opts2.bearing = heading; if (force) opts2.zoom = Math.max(map.getZoom(), 17); }
+  else if (force) opts2.zoom = Math.max(map.getZoom(), 16);
+  map.easeTo(opts2);
+}
+// nhấn giữ trên bản đồ để báo camera
+let lpT = null;
+map.on('touchstart', e => { if (e.originalEvent.touches.length!==1) return; const ll = e.lngLat; lpT = setTimeout(()=>openAdd({lat:ll.lat, lon:ll.lng}), 650); });
+['touchend','touchmove','dragstart','zoomstart'].forEach(ev => map.on(ev, () => clearTimeout(lpT)));
 
 /* ---------- Hình học ---------- */
 const R = 6371000, rad = d => d*Math.PI/180, deg = r => r*180/Math.PI;
@@ -338,23 +436,28 @@ function parseData(d){
     cams.push({id:'osm'+n.id, lat:n.lat, lon:n.lon, type, dir: isNaN(dir)?null:dir, limit: parseSpeed(t.maxspeed || (rel&&rel.maxspeed)), src:'osm'});
   });
 }
-function camIcon(c){
+function camEl(c){
   const cls = c.src==='user' ? 'user' : (c.type==='traffic_signals' ? 'red' : '');
-  return L.divIcon({className:'', iconSize:[26,26], iconAnchor:[13,13], html:`<div class="camMk ${cls}"><svg viewBox="0 0 24 24" width="16" height="16" fill="#fff"><path d="M3 8.5 15.5 4l2 5.2-12.4 4.6zM16.2 10.6l2.3-.9 1.6 4.1-2.3.9zM6 14.3l2 .7-.6 1.7H4v3H2v-7h2v2.3z"/></svg></div>`});
+  const el = document.createElement('div'); el.className = 'camMk ' + cls;
+  el.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="#fff"><path d="M3 8.5 15.5 4l2 5.2-12.4 4.6zM16.2 10.6l2.3-.9 1.6 4.1-2.3.9zM6 14.3l2 .7-.6 1.7H4v3H2v-7h2v2.3z"/></svg>';
+  return el;
 }
 function allCams(){ return cams.concat(userCams.map(c=>Object.assign({src:'user'}, c))); }
 function drawData(){
-  roadLayer.clearLayers(); camLayer.clearLayers();
+  const feats = [];
   ways.forEach(w => {
     const lim = parseSpeed(w.tags.maxspeed); if (!lim) return;
     const col = lim>=80 ? '#3fa9ff' : lim>=60 ? '#9be15d' : lim>=50 ? '#ffd23f' : '#ff8a3d';
-    L.polyline(w.geometry.map(g=>[g.lat,g.lon]), {color:col, weight:3, opacity:.55, interactive:false}).addTo(roadLayer);
+    feats.push({type:'Feature', properties:{col}, geometry:{type:'LineString', coordinates:w.geometry.map(g=>[g.lon,g.lat])}});
   });
+  const src = map.getSource && map.getSource('roads'); if (src) src.setData({type:'FeatureCollection', features:feats});
+  camMarkers.splice(0).forEach(m=>m.remove());
   allCams().forEach(c => {
-    const mk = L.marker([c.lat,c.lon], {icon:camIcon(c)}).addTo(camLayer);
-    mk.bindPopup(`<b>${CAM_LABEL[c.type]||'Camera'}</b>${c.limit?'<br>Giới hạn: '+c.limit+' km/h':''}${c.note?'<br>'+escapeHtml(c.note):''}<br><small>${c.src==='user'?'Đồng chí tự báo':'Nguồn OpenStreetMap'}</small>`);
+    const pop = new maplibregl.Popup({offset:16, closeButton:false}).setHTML(`<b>${CAM_LABEL[c.type]||'Camera'}</b>${c.limit?'<br>Giới hạn: '+c.limit+' km/h':''}${c.note?'<br>'+escapeHtml(c.note):''}<br><small>${c.src==='user'?'Đồng chí tự báo':c.src==='sim'?'Camera giả lập':'Nguồn OpenStreetMap'}</small>`);
+    camMarkers.push(new maplibregl.Marker({element:camEl(c)}).setLngLat([c.lon,c.lat]).setPopup(pop).addTo(map));
   });
 }
+map.on('load', () => drawData());
 const escapeHtml = s => String(s).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 
 /* ---------- Vị trí, tốc độ ---------- */
@@ -372,10 +475,9 @@ function onPos(p){
   if (speedKmh < 2) speedKmh = 0;
   if (hdg!=null && !isNaN(hdg) && speedKmh>3) heading = hdg;
   prev = cur; pos = cur;
-  me.setLatLng([cur.lat,cur.lon]); accCircle.setLatLng([cur.lat,cur.lon]).setRadius(cur.acc);
-  if (!map.hasLayer(me)){ me.addTo(map); accCircle.addTo(map); map.setView([cur.lat,cur.lon], 17); }
-  const svg = me.getElement() && me.getElement().querySelector('svg'); if (svg && heading!=null) svg.style.transform = `rotate(${heading}deg)`;
-  if (follow) map.panTo([cur.lat,cur.lon], {animate:true, duration:.5});
+  me.setLngLat([cur.lon,cur.lat]); if (heading!=null) me.setRotation(heading);
+  if (!meAdded){ me.addTo(map); meAdded = true; map.jumpTo({center:[cur.lon,cur.lat], zoom:17}); }
+  if (follow) followCam(false);
   $('gpsAcc').textContent = 'GPS ±' + Math.round(cur.acc) + ' m';
   if (!loaded || dist(loaded.p, cur) > RELOAD_DIST || Date.now()-loaded.t > RELOAD_AGE) loadData(cur);
   update();
@@ -450,23 +552,34 @@ function update(){
     if (!overSince) overSince = Date.now();
     if (Date.now()-overSince > 1500 && Date.now()-lastOverAlert > 8000){ lastOverAlert = Date.now(); beep(3); speak('Vượt quá tốc độ cho phép. Giảm tốc độ.'); toast('Vượt quá tốc độ cho phép ' + curLimit + ' km/h'); }
   } else overSince = 0;
+  navTick();
 }
 function tenLoaiDuong(h){ return ({motorway:'Đường cao tốc',trunk:'Quốc lộ',primary:'Đường chính',secondary:'Đường cấp 2',tertiary:'Đường cấp 3',residential:'Đường khu dân cư',living_street:'Đường nội bộ',unclassified:'Đường địa phương'})[String(h).replace('_link','')] || 'Đường'; }
 
 /* ---------- Âm thanh ---------- */
 let audioCtx = null, viVoice = null;
+let voicesList = [];
+function loadVoices(){
+  if (!('speechSynthesis' in window)) return;
+  const vs = speechSynthesis.getVoices(); if (!vs.length) return;
+  voicesList = vs.slice().sort((a,b) => (/^vi/i.test(b.lang)) - (/^vi/i.test(a.lang)) || a.lang.localeCompare(b.lang) || a.name.localeCompare(b.name));
+  const sel = $('optVoice'), want = opts.voice || '';
+  sel.innerHTML = '<option value="">Tự động (giọng tiếng Việt của máy)</option>' + voicesList.map(v => `<option value="${escapeHtml(v.voiceURI)}">${/^vi/i.test(v.lang) ? '🇻🇳 ' : ''}${escapeHtml(v.name)} (${escapeHtml(v.lang)})${v.localService ? '' : ' · trực tuyến'}</option>`).join('');
+  sel.value = voicesList.some(v=>v.voiceURI===want) ? want : '';
+  viVoice = voicesList.find(v=>v.voiceURI===want) || voicesList.find(v=>/^vi/i.test(v.lang) && /enhanced|premium|natural|nâng cao/i.test(v.name)) || voicesList.find(v=>/^vi/i.test(v.lang)) || null;
+}
+if ('speechSynthesis' in window){ loadVoices(); speechSynthesis.addEventListener ? speechSynthesis.addEventListener('voiceschanged', loadVoices) : (speechSynthesis.onvoiceschanged = loadVoices); }
 function initAudio(){
   try{ audioCtx = audioCtx || new (window.AudioContext||window.webkitAudioContext)(); audioCtx.resume(); }catch(e){}
   if ('speechSynthesis' in window){
-    const pick = () => { const vs = speechSynthesis.getVoices(); viVoice = vs.find(v=>/^vi/i.test(v.lang)) || null; };
-    pick(); speechSynthesis.onvoiceschanged = pick;
+    loadVoices();
     const u = new SpeechSynthesisUtterance(' '); u.volume = 0; speechSynthesis.speak(u);
   }
 }
 function speak(text, priority){
   if (!opts.sound || !('speechSynthesis' in window)) return;
   if (priority) speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text); u.lang = 'vi-VN'; if (viVoice) u.voice = viVoice; u.rate = 1.05;
+  const u = new SpeechSynthesisUtterance(text); u.lang = viVoice ? viVoice.lang : 'vi-VN'; if (viVoice) u.voice = viVoice; u.rate = opts.rate || 1; u.volume = opts.vol == null ? 1 : opts.vol;
   speechSynthesis.speak(u);
 }
 function beep(n){
@@ -506,7 +619,7 @@ function openAdd(latlng){
   $('addSheet').hidden = false;
 }
 $('bAdd').onclick = () => openAdd(null);
-map.on('contextmenu', e => openAdd({lat:e.latlng.lat, lon:e.latlng.lng}));
+map.on('contextmenu', e => openAdd({lat:e.lngLat.lat, lon:e.lngLat.lng}));
 $('addCancel').onclick = () => $('addSheet').hidden = true;
 $('addSave').onclick = () => {
   const c = {id:'u'+Date.now(), lat:addAt.lat, lon:addAt.lon, type:$('addType').value, limit: parseInt($('addLimit').value,10) || null,
@@ -516,6 +629,13 @@ $('addSave').onclick = () => {
 };
 
 /* ---------- Tuỳ chọn ---------- */
+function showVoiceVals(){ $('rateVal').textContent = String(Number($('optRate').value).toFixed(1)).replace('.', ','); $('volVal').textContent = Math.round($('optVol').value*100); }
+$('optVoice').onchange = () => { opts.voice = $('optVoice').value; LS.set('opts', opts); loadVoices(); speakTest(); };
+$('optRate').oninput = () => { opts.rate = +$('optRate').value; LS.set('opts', opts); showVoiceVals(); };
+$('optVol').oninput = () => { opts.vol = +$('optVol').value; LS.set('opts', opts); showVoiceVals(); };
+$('optRate').onchange = $('optVol').onchange = () => speakTest();
+function speakTest(){ const was = opts.sound; opts.sound = true; initAudio(); speak('Phía trước 300 mét có camera tốc độ, tốc độ giới hạn 50 ki lô mét giờ', true); opts.sound = was; }
+$('bVoiceTest').onclick = speakTest;
 function renderUserList(){
   $('userCount').textContent = userCams.length;
   $('userList').innerHTML = userCams.length ? '' : '<p>Chưa có điểm nào. Bấm “Báo camera” khi đi qua camera để lưu lại.</p>';
@@ -527,10 +647,10 @@ function renderUserList(){
     d.appendChild(b); $('userList').appendChild(d);
   });
 }
-$('bMenu').onclick = () => { $('optVeh').value=opts.veh; $('optWarn').value=opts.warn; $('optTol').value=opts.tol; $('optArea').value=opts.area; renderUserList(); $('menuSheet').hidden = false; };
+$('bMenu').onclick = () => { $('optVeh').value=opts.veh; $('optWarn').value=opts.warn; $('optTol').value=opts.tol; $('optArea').value=opts.area; loadVoices(); $('optRate').value=opts.rate||1; $('optVol').value=opts.vol==null?1:opts.vol; showVoiceVals(); renderUserList(); $('menuSheet').hidden = false; };
 $('menuClose').onclick = () => { $('menuSheet').hidden = true; };
 ['optVeh','optWarn','optTol','optArea'].forEach(id => $(id).onchange = () => {
-  opts.veh=$('optVeh').value; opts.warn=+$('optWarn').value; opts.tol=+$('optTol').value; opts.area=$('optArea').value; LS.set('opts', opts); update();
+  opts.veh=$('optVeh').value; setVeh(opts.veh); opts.warn=+$('optWarn').value; opts.tol=+$('optTol').value; opts.area=$('optArea').value; LS.set('opts', opts); update();
 });
 $('bRefresh').onclick = () => { if (pos){ loaded = null; loadData(pos); $('menuSheet').hidden = true; } else toast('Chưa có vị trí GPS'); };
 $('bGmaps').onclick = () => { const p = pos || {lat:map.getCenter().lat, lon:map.getCenter().lng}; window.open(`https://www.google.com/maps/@?api=1&map_action=map&center=${p.lat},${p.lon}&zoom=17&basemap=satellite&layer=traffic`, '_blank'); };
@@ -558,18 +678,206 @@ $('bSim').onclick = () => {
   $('bSim').classList.add('active'); $('bSim').querySelector('span').textContent='Dừng thử';
   // tạo camera mô phỏng giữa tuyến (chỉ tồn tại trong lần chạy thử)
   const simCam = {id:'sim', lat:10.7546, lon:106.6372, type:'maxspeed', limit:50, src:'sim', note:'Camera giả lập để chạy thử'};
-  cams = cams.filter(c=>c.id!=='sim').concat([simCam]); drawData();
-  let seg = 0, f = 0; const v = 58/3.6; // 58 km/h
+  if (!nav){ cams = cams.filter(c=>c.id!=='sim').concat([simCam]); drawData(); }
+  const PATH = (nav || plan) ? (nav || plan).coords.map(c=>[c[1],c[0]]) : SIM_ROUTE;
+  if (nav || plan){ if (!nav) startNav(); }
+  let seg = 0, f = 0; const v = 50/3.6; // 50 km/h
   follow = true; prev = null;
   simTimer = setInterval(() => {
-    const a = {lat:SIM_ROUTE[seg][0], lon:SIM_ROUTE[seg][1]}, b = {lat:SIM_ROUTE[seg+1][0], lon:SIM_ROUTE[seg+1][1]};
-    const segLen = dist(a,b); f += v/segLen;
-    if (f >= 1){ f -= 1; seg++; if (seg >= SIM_ROUTE.length-1){ seg = 0; f = 0; camSpoken = {}; } }
-    const A = {lat:SIM_ROUTE[seg][0], lon:SIM_ROUTE[seg][1]}, B = {lat:SIM_ROUTE[seg+1][0], lon:SIM_ROUTE[seg+1][1]};
+    const a = {lat:PATH[seg][0], lon:PATH[seg][1]}, b = {lat:PATH[seg+1][0], lon:PATH[seg+1][1]};
+    let segLen = dist(a,b); f += v/Math.max(segLen,0.5);
+    while (f >= 1 && seg < PATH.length-1){ seg++; if (seg >= PATH.length-1){ seg = 0; f = 0; camSpoken = {}; break; } const nl = dist({lat:PATH[seg][0],lon:PATH[seg][1]},{lat:PATH[seg+1][0],lon:PATH[seg+1][1]}); f = (f-1)*Math.max(segLen,0.5)/Math.max(nl,0.5); segLen = nl; }
+    const A = {lat:PATH[seg][0], lon:PATH[seg][1]}, B = {lat:PATH[seg+1][0], lon:PATH[seg+1][1]};
     onPos({timestamp:Date.now(), coords:{latitude:A.lat+(B.lat-A.lat)*f, longitude:A.lon+(B.lon-A.lon)*f, accuracy:5, speed:v, heading:bearing(A,B)}});
   }, 1000);
-  toast('Đang chạy thử trên đường Kinh Dương Vương với tốc độ 58 km/h', true);
+  toast((nav ? 'Đang chạy thử theo lộ trình đã chọn' : 'Đang chạy thử trên đường Kinh Dương Vương') + ' với tốc độ 50 km/h', true);
 };
+
+
+/* ---------- Tìm điểm đến, chỉ đường ---------- */
+const VALHALLA = 'https://valhalla1.openstreetmap.de/route';
+const OSRM = 'https://router.project-osrm.org/route/v1/driving/';
+let dest = null, plan = null, nav = null, destMarker = null, rerouteAt = 0, offCount = 0;
+function fmtDist(m){ return m >= 1000 ? (m/1000).toFixed(m>=10000?0:1).replace('.', ',') + ' km' : Math.max(10, Math.round(m/10)*10) + ' m'; }
+function fmtTime(s){ const m = Math.round(s/60); return m < 60 ? m + ' phút' : Math.floor(m/60) + ' giờ ' + (m%60) + ' phút'; }
+function sayDist(m){ return m >= 1000 ? (Math.round(m/100)/10).toString().replace('.', ' phẩy ') + ' ki lô mét' : (Math.round(m/50)*50 || 50) + ' mét'; }
+function setVeh(v){ opts.veh = v; LS.set('opts', opts); $('vCar').classList.toggle('on', v==='car'); $('vMoto').classList.toggle('on', v==='moto'); if ($('optVeh')) $('optVeh').value = v; }
+$('vCar').onclick = () => { setVeh('car'); if (dest) planRoute(dest); };
+$('vMoto').onclick = () => { setVeh('moto'); if (dest) planRoute(dest); };
+$('searchPill').onclick = () => { setVeh(opts.veh); $('routeSheet').hidden = false; setTimeout(()=>$('destQ').focus(), 50); };
+$('routeClose').onclick = () => { $('routeSheet').hidden = true; if (!nav) clearPlan(); };
+
+// Tìm địa điểm (Photon, dự phòng Nominatim), ưu tiên quanh vị trí hiện tại
+let qTimer = null, qSeq = 0;
+$('destQ').addEventListener('input', () => { clearTimeout(qTimer); qTimer = setTimeout(search, 450); });
+$('destQ').addEventListener('keydown', e => { if (e.key==='Enter'){ clearTimeout(qTimer); search(); } });
+async function search(){
+  const q = $('destQ').value.trim(); const box = $('destResults');
+  if (q.length < 2){ box.innerHTML = ''; return; }
+  const seq = ++qSeq; box.innerHTML = '<p>Đang tìm…</p>';
+  const c = pos || {lat:map.getCenter().lat, lon:map.getCenter().lng};
+  let items = [];
+  try{
+    const r = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&lat=${c.lat}&lon=${c.lon}&limit=8&bbox=102.1,8.2,109.6,23.4`);
+    const j = await r.json();
+    items = (j.features||[]).map(f => { const p = f.properties; return {lat:f.geometry.coordinates[1], lon:f.geometry.coordinates[0],
+      name: p.name || [p.housenumber, p.street].filter(Boolean).join(' ') || q,
+      addr: [p.housenumber && p.name ? p.housenumber+' '+(p.street||'') : p.street, p.district || p.locality, p.city || p.county, p.state].filter(Boolean).join(', ')}; });
+  }catch(e){}
+  if (!items.length){
+    try{
+      const r = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&countrycodes=vn&limit=8&accept-language=vi&q=${encodeURIComponent(q)}&viewbox=${c.lon-0.3},${c.lat+0.3},${c.lon+0.3},${c.lat-0.3}`);
+      const j = await r.json();
+      items = j.map(x => ({lat:+x.lat, lon:+x.lon, name:(x.name || x.display_name.split(',')[0]), addr:x.display_name.split(',').slice(1,4).join(',').trim()}));
+    }catch(e){}
+  }
+  if (seq !== qSeq) return;
+  if (!items.length){ box.innerHTML = '<p>Không tìm thấy. Đồng chí thử ghi rõ hơn, ví dụ thêm tên quận, tỉnh.</p>'; return; }
+  box.innerHTML = '';
+  items.forEach(it => {
+    const b = document.createElement('button');
+    const d = pos ? ' · ' + fmtDist(dist(pos, it)) : '';
+    b.innerHTML = `${escapeHtml(it.name)}<small>${escapeHtml(it.addr)}${d}</small>`;
+    b.onclick = () => { dest = it; box.innerHTML = ''; $('destQ').value = it.name; planRoute(it); };
+    box.appendChild(b);
+  });
+}
+
+// Giải mã polyline độ chính xác 6 (Valhalla)
+function decode6(str){
+  let i=0, lat=0, lon=0; const out=[];
+  while (i < str.length){
+    for (const k of [0,1]){ let b, sh=0, r=0; do { b = str.charCodeAt(i++) - 63; r |= (b & 0x1f) << sh; sh += 5; } while (b >= 0x20); const d = (r & 1) ? ~(r >> 1) : (r >> 1); if (k===0) lat += d; else lon += d; }
+    out.push([lon/1e6, lat/1e6]);
+  }
+  return out;
+}
+const VTYPE = {1:'Xuất phát',2:'Xuất phát',3:'Xuất phát',4:'Đến nơi',5:'Đến nơi, điểm đến ở bên phải',6:'Đến nơi, điểm đến ở bên trái',7:'Đi tiếp',8:'Đi thẳng',9:'Chếch sang phải',10:'Rẽ phải',11:'Rẽ ngoặt phải',12:'Quay đầu',13:'Quay đầu',14:'Rẽ ngoặt trái',15:'Rẽ trái',16:'Chếch sang trái',17:'Đi thẳng',18:'Đi về bên phải',19:'Đi về bên trái',20:'Ra lối bên phải',21:'Ra lối bên trái',22:'Đi thẳng',23:'Giữ bên phải',24:'Giữ bên trái',25:'Nhập làn',26:'Vào vòng xoay',27:'Ra khỏi vòng xoay',28:'Lên phà',29:'Rời phà',37:'Nhập làn bên phải',38:'Nhập làn bên trái'};
+const VANG = {9:45,10:90,11:135,12:180,13:180,14:-135,15:-90,16:-45,18:30,19:-30,20:40,21:-40,23:20,24:-20,37:20,38:-20};
+function mkText(type, street, exitN){
+  let t = VTYPE[type] || 'Đi tiếp';
+  if (type===26 && exitN) t = 'Vào vòng xoay, ra ở lối thứ ' + exitN;
+  if (street && ![4,5,6].includes(type)) t += (type<=3 ? ' theo ' : ' vào ') + street;
+  return t;
+}
+async function fetchValhalla(from, to){
+  const body = {locations:[{lat:from.lat, lon:from.lon, ...(heading!=null && speedKmh>5 ? {heading:Math.round(heading), heading_tolerance:60} : {})},{lat:to.lat, lon:to.lon}],
+    costing: opts.veh==='moto' ? 'motor_scooter' : 'auto', directions_options:{units:'kilometers', language:'en-US'},
+    costing_options: opts.veh==='moto' ? {motor_scooter:{top_speed:60, use_primary:0.6, use_hills:0.5}} : {}};
+  const ctl = new AbortController(); const to2 = setTimeout(()=>ctl.abort(), 15000);
+  const r = await fetch(VALHALLA + '?json=' + encodeURIComponent(JSON.stringify(body)), {signal:ctl.signal}); clearTimeout(to2);
+  const j = await r.json(); if (!j.trip) throw new Error(j.error || 'Không có lộ trình');
+  const leg = j.trip.legs[0]; const coords = decode6(leg.shape);
+  const mans = leg.maneuvers.map(m => ({idx:m.begin_shape_index, type:m.type, street:(m.street_names||[])[0]||'', exitN:m.roundabout_exit_count||0}));
+  return {coords, mans, totalM: j.trip.summary.length*1000, totalS: j.trip.summary.time};
+}
+async function fetchOsrm(from, to){
+  const r = await fetch(`${OSRM}${from.lon},${from.lat};${to.lon},${to.lat}?overview=full&geometries=geojson&steps=true`);
+  const j = await r.json(); if (!j.routes || !j.routes.length) throw new Error('Không có lộ trình');
+  const rt = j.routes[0]; const coords = rt.geometry.coordinates; const mans = [];
+  const modT = {'uturn':12,'sharp right':11,'right':10,'slight right':9,'straight':8,'slight left':16,'left':15,'sharp left':14};
+  rt.legs[0].steps.forEach(st => {
+    const m = st.maneuver; let type = modT[m.modifier] || 8;
+    if (m.type==='depart') type = 1; else if (m.type==='arrive') type = 4; else if (m.type==='roundabout' || m.type==='rotary') type = 26;
+    let best = 0, bd = 1e9; const L0 = {lon:m.location[0], lat:m.location[1]};
+    for (let i=0;i<coords.length;i++){ const d = dist(L0, {lon:coords[i][0], lat:coords[i][1]}); if (d < bd){ bd = d; best = i; } }
+    mans.push({idx:best, type, street:st.name||'', exitN:m.exit||0});
+  });
+  return {coords, mans, totalM: rt.distance, totalS: rt.duration * (opts.veh==='moto' ? 1.15 : 1)};
+}
+async function getRoute(from, to){
+  try{ return await fetchValhalla(from, to); }catch(e){ return await fetchOsrm(from, to); }
+}
+function prepRoute(r){
+  r.cum = [0];
+  for (let i=1;i<r.coords.length;i++) r.cum.push(r.cum[i-1] + dist({lon:r.coords[i-1][0], lat:r.coords[i-1][1]}, {lon:r.coords[i][0], lat:r.coords[i][1]}));
+  const geoM = r.cum[r.cum.length-1]; if (geoM > 0 && r.totalM > 0){ r.totalS *= geoM / r.totalM; r.totalM = geoM; }
+  r.mans.forEach(m => { m.text = mkText(m.type, m.street, m.exitN); m.at = r.cum[Math.min(m.idx, r.cum.length-1)]; });
+  return r;
+}
+function drawRoute(r){
+  const data = {type:'FeatureCollection', features: r ? [{type:'Feature', properties:{}, geometry:{type:'LineString', coordinates:r.coords}}] : []};
+  if (!map.getSource('route')){
+    if (!map.isStyleLoaded()) return;
+    map.addSource('route', {type:'geojson', data});
+    map.addLayer({id:'route-case', type:'line', source:'route', layout:{'line-cap':'round','line-join':'round'}, paint:{'line-color':'#0b4fb3','line-width':['interpolate',['linear'],['zoom'],12,6,18,16]}});
+    map.addLayer({id:'route', type:'line', source:'route', layout:{'line-cap':'round','line-join':'round'}, paint:{'line-color':'#3b8cff','line-width':['interpolate',['linear'],['zoom'],12,4,18,11]}});
+  } else map.getSource('route').setData(data);
+}
+async function planRoute(to){
+  const from = pos || (simTimer ? null : null);
+  if (!from){ toast('Chưa có vị trí GPS. Bấm Bắt đầu hành trình hoặc chờ máy bắt tín hiệu.'); return; }
+  $('routeBox').hidden = false; $('rsTime').textContent = 'Đang tìm đường…'; $('rsDist').textContent = ''; $('rsSteps').innerHTML = ''; $('routeGo').hidden = true;
+  try{
+    plan = prepRoute(await getRoute(from, to));
+  }catch(e){ $('rsTime').textContent = 'Chưa tìm được đường'; $('rsDist').textContent = 'thử lại sau ít giây'; return; }
+  $('rsTime').textContent = fmtTime(plan.totalS); $('rsDist').textContent = fmtDist(plan.totalM) + (opts.veh==='moto' ? ' · xe máy' : ' · ô tô');
+  $('rsTo').textContent = 'Đến: ' + to.name + (to.addr ? ', ' + to.addr : '');
+  $('rsSteps').innerHTML = plan.mans.map((m,i) => `<div><span>${escapeHtml(m.text)}</span><span>${i < plan.mans.length-1 ? fmtDist(plan.mans[i+1].at - m.at) : ''}</span></div>`).join('');
+  $('routeGo').hidden = false;
+  drawRoute(plan); placeDest(to);
+  const b = plan.coords.reduce((bb,c)=>[[Math.min(bb[0][0],c[0]),Math.min(bb[0][1],c[1])],[Math.max(bb[1][0],c[0]),Math.max(bb[1][1],c[1])]], [[180,90],[-180,-90]]);
+  follow = false; $('recenter').classList.add('off');
+  map.fitBounds(b, {padding:{top:150, bottom: Math.round(innerHeight*0.55), left:40, right:40}, pitch:0, bearing:0, duration:700});
+}
+function placeDest(to){
+  if (destMarker) destMarker.remove();
+  const el = document.createElement('div'); el.className = 'destMk';
+  el.innerHTML = '<svg viewBox="0 0 24 24" width="30" height="30"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z" fill="#e53935" stroke="#fff" stroke-width="1.5"/><circle cx="12" cy="9" r="2.6" fill="#fff"/></svg>';
+  destMarker = new maplibregl.Marker({element:el, anchor:'bottom'}).setLngLat([to.lon, to.lat]).addTo(map);
+}
+function clearPlan(){ plan = null; nav = null; dest = null; drawRoute(null); if (destMarker){ destMarker.remove(); destMarker = null; } $('navBan').hidden = true; $('navInfo').hidden = true; $('searchPill').hidden = false; $('routeBox').hidden = true; }
+$('routeGo').onclick = () => startNav();
+function startNav(){
+  if (!plan) return;
+  nav = Object.assign(plan, {cur:0, said:{}, dest});
+  $('routeSheet').hidden = true; $('searchPill').hidden = true; $('navBan').hidden = false; $('navInfo').hidden = false;
+  follow = true; $('recenter').classList.remove('off'); if (!is3d){ is3d = true; set3dBtn(); }
+  followCam(true); initAudio();
+  speak('Bắt đầu chỉ đường đến ' + (dest ? dest.name : 'điểm đến') + '. Quãng đường ' + sayDist(plan.totalM) + ', khoảng ' + fmtTime(plan.totalS));
+  navTick();
+}
+$('navStop').onclick = () => { clearPlan(); speak('Đã kết thúc chỉ đường'); };
+$('navMute').onclick = () => { if (nav){ $('routeSheet').hidden = false; $('routeGo').hidden = true; } };
+function arrowSvg(type){
+  if ([4,5,6].includes(type)) return '<svg viewBox="0 0 24 24" width="40" height="40"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z" fill="#fff"/><circle cx="12" cy="9" r="2.6" fill="#0d6e3f"/></svg>';
+  if (type===26 || type===27) return '<svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="#fff" stroke-width="2.6"><circle cx="12" cy="11" r="5"/><path d="M12 22v-6M17 6l3-3M20 3v4M20 3h-4"/></svg>';
+  if (type===12 || type===13) return '<svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="#fff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21V9a4 4 0 0 1 8 0v4"/><path d="m12 10 4 4 4-4"/></svg>';
+  const a = VANG[type] || 0;
+  return `<svg viewBox="0 0 24 24" width="40" height="40" style="transform:rotate(${a}deg)" fill="none" stroke="#fff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V4"/><path d="m6 10 6-6 6 6"/></svg>`;
+}
+function navTick(){
+  if (!nav || !pos) return;
+  const C = nav.coords; let best = nav.cur, bd = 1e9;
+  const lo = Math.max(0, nav.cur-5), hi = Math.min(C.length-2, nav.cur+300);
+  for (let i=lo;i<=hi;i++){ const d = segDist(pos, {lon:C[i][0],lat:C[i][1]}, {lon:C[i+1][0],lat:C[i+1][1]}); if (d < bd){ bd = d; best = i; } }
+  nav.cur = best;
+  const along = nav.cum[best] + Math.min(dist({lon:C[best][0],lat:C[best][1]}, pos), nav.cum[best+1]-nav.cum[best]);
+  const remain = Math.max(0, nav.totalM - along);
+  // lệch tuyến: tính lại đường
+  if (bd > 55 && pos.acc < 60){ offCount++; } else offCount = 0;
+  if (offCount >= 3 && Date.now() - rerouteAt > 15000 && nav.dest){
+    rerouteAt = Date.now(); offCount = 0; speak('Đang tính lại đường'); const d0 = nav.dest;
+    getRoute(pos, d0).then(r => { plan = prepRoute(r); nav = Object.assign(plan, {cur:0, said:{}, dest:d0}); drawRoute(nav); }).catch(()=>{});
+  }
+  // hướng dẫn kế tiếp
+  const ni = nav.mans.findIndex(m => m.at > along + 5);
+  const m = ni >= 0 ? nav.mans[ni] : nav.mans[nav.mans.length-1];
+  const dm = Math.max(0, m.at - along);
+  $('navArrow').innerHTML = arrowSvg(m.type); $('navDist').textContent = fmtDist(dm); $('navText').textContent = m.text;
+  const nx = ni >= 0 ? nav.mans[ni+1] : null; $('navThen').textContent = nx && (nx.at - m.at) < 150 ? 'Sau đó: ' + nx.text : '';
+  const spd = Math.max(speedKmh, 20)/3.6; const left = nav.totalS * remain / Math.max(nav.totalM,1);
+  $('navRemain').textContent = fmtTime(left) + ' · ' + fmtDist(remain);
+  $('navEta').textContent = 'Dự kiến đến lúc ' + hhmm(new Date(Date.now() + left*1000));
+  // đọc hướng dẫn: báo trước (theo tốc độ) và khi sắp tới
+  const key = ni + ':' + m.idx, said = nav.said[key] || {};
+  const far = Math.max(250, Math.min(800, spd*25));
+  if ([4,5,6].includes(m.type) && remain < 30){ speak('Đã đến nơi. ' + (m.type===5 ? 'Điểm đến ở bên phải' : m.type===6 ? 'Điểm đến ở bên trái' : '')); clearPlan(); toast('Đã đến nơi', true); return; }
+  if (!said.far && dm <= far && dm > 90){ said.far = true; speak('Sau ' + sayDist(dm) + ', ' + m.text.toLowerCase()); }
+  if (!said.near && dm <= Math.max(40, spd*4)){ said.near = true; speak(m.text + (nx && (nx.at - m.at) < 150 ? ', sau đó ' + nx.text.toLowerCase() : '')); }
+  nav.said[key] = said;
+}
+map.on('load', () => { if (plan) drawRoute(plan); });
 
 /* ---------- Khởi động ---------- */
 let wakeLock = null;
