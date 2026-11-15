@@ -236,6 +236,7 @@ html,body{height:100%;margin:0;background:var(--navy);color:var(--fg);font-famil
   <h1>Bản đồ cảnh báo giao thông</h1>
   <p>Hiển thị bản đồ vệ tinh, tốc độ hiện tại, biển giới hạn tốc độ của tuyến đường đang đi và cảnh báo bằng giọng nói khi đến gần camera phạt nguội. Dữ liệu được tải mới liên tục theo vị trí.</p>
   <button class="btn primary" id="bGo"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 4.5 20.3l.7.7L12 18l6.8 3 .7-.7z"/></svg>Bắt đầu hành trình</button>
+  <p style="font-size:11px;opacity:.75;margin-top:10px;text-align:center">Dữ liệu tốc độ, camera chỉ để tham khảo. Người lái tự chịu trách nhiệm chấp hành biển báo, hiệu lệnh trên đường.<br>Bản đồ © OpenStreetMap contributors · OpenFreeMap · MapLibre</p>
   <p style="font-size:11.5px;margin-top:16px">Ứng dụng sẽ xin quyền vị trí, cảm biến nghiêng. Giữ màn hình sáng trong khi lái xe.</p>
 </div>
 
@@ -373,7 +374,7 @@ let is3d = LS.get('is3d', true);
 const map = new maplibregl.Map({
   container:'map', style:'https://tiles.openfreemap.org/styles/liberty',
   center:[106.6330, 10.7525], zoom:16, pitch: is3d ? 60 : 0, maxPitch:75,
-  attributionControl:false, fadeDuration:0, antialias:false, renderWorldCopies:false
+  attributionControl:{compact:true, customAttribution:'© OpenStreetMap'}, fadeDuration:0, antialias:false, renderWorldCopies:false
 });
 map.addControl(new maplibregl.AttributionControl({compact:true, customAttribution:'Ảnh vệ tinh © Esri · Biển báo, camera © OpenStreetMap'}), 'bottom-left');
 // chỉ dùng kiểu dự phòng khi máy chủ bản đồ vector không trả lời sau 15 giây
