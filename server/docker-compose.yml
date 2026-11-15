@@ -1,0 +1,43 @@
+# Bộ máy chủ riêng cho Bản đồ cảnh báo (dữ liệu Việt Nam)
+# Chạy: docker compose up -d   (máy Ubuntu 8–16 GB RAM, ổ 60 GB)
+services:
+  valhalla:            # chỉ đường ô tô, xe máy
+    image: ghcr.io/gis-ops/docker-valhalla/valhalla:latest
+    restart: unless-stopped
+    environment:
+      - tile_urls=https://download.geofabrik.de/asia/vietnam-latest.osm.pbf
+      - serve_tiles=True
+      - build_admins=True
+      - build_time_zones=True
+      - force_rebuild=False
+    volumes: [ "./data/valhalla:/custom_files" ]
+    expose: [ "8002" ]
+
+  overpass:            # biển tốc độ, camera, biển cấm, địa điểm
+    image: wiktorn/overpass-api:latest
+    restart: unless-stopped
+    environment:
+      - OVERPASS_META=no
+      - OVERPASS_MODE=init
+      - OVERPASS_PLANET_URL=https://download.geofabrik.de/asia/vietnam-latest.osm.bz2
+      - OVERPASS_DIFF_URL=https://download.geofabrik.de/asia/vietnam-updates/
+      - OVERPASS_UPDATE_SLEEP=3600
+      - OVERPASS_RULES_LOAD=10
+    volumes: [ "./data/overpass:/db" ]
+    expose: [ "80" ]
+
+  api:                 # camera, kẹt xe do người dùng báo (dùng chung)
+    image: node:22-alpine
+    restart: unless-stopped
+    working_dir: /app
+    command: node --experimental-sqlite server.js
+    environment: [ "DB=/data/reports.db", "PORT=8080" ]
+    volumes: [ "./api:/app:ro", "./data/api:/data" ]
+    expose: [ "8080" ]
+
+  caddy:               # https tự động
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports: [ "80:80", "443:443" ]
+    environment: [ "DOMAIN=${DOMAIN}" ]
+    volumes: [ "./Caddyfile:/etc/caddy/Caddyfile:ro", "./data/caddy:/data" ]

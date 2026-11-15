@@ -1,0 +1,8 @@
+{$DOMAIN} {
+  header Access-Control-Allow-Origin *
+  header Access-Control-Allow-Headers Content-Type
+  handle_path /route*      { reverse_proxy valhalla:8002 }
+  handle_path /overpass*   { reverse_proxy overpass:80 }
+  handle_path /api*        { reverse_proxy api:8080 }
+  respond "Ban do canh bao - may chu dang chay" 200
+}
