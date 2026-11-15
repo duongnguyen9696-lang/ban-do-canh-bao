@@ -110,6 +110,16 @@ html,body{height:100%;margin:0;background:var(--navy);color:var(--fg);font-famil
 .steps div{padding:6px 0;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:8px}
 .steps div span:last-child{color:var(--muted);white-space:nowrap}
 .destMk{width:30px;height:30px}
+.pt{display:flex;align-items:center;gap:8px;margin-top:8px}
+.pt .lt{width:28px;height:28px;flex:none;border-radius:50%;display:grid;place-items:center;font:800 13px var(--f-body);color:#fff;background:#f39c12}
+.pt .lt.a{background:#1f8a4c}.pt .lt.b{background:#e53935}
+.pt input{flex:1;min-width:0}
+.pt button{flex:none;width:40px;height:40px;border-radius:10px;border:1px solid var(--line);background:#0c1d36;color:var(--fg);font-size:16px;cursor:pointer}
+.pt.active input{border-color:#6aa0ff}
+.ptMk{width:26px;height:26px;border-radius:50%;border:2px solid #fff;display:grid;place-items:center;font:800 12px var(--f-body);color:#fff;box-shadow:0 2px 6px rgba(0,0,0,.5);background:#f39c12}
+.ptMk.a{background:#1f8a4c}.ptMk.b{background:#e53935}
+#pickHint{position:fixed;left:50%;transform:translateX(-50%);top:calc(var(--st) + 190px);z-index:1500;background:#1a73e8;color:#fff;padding:10px 14px;border-radius:12px;font:600 14px var(--f-body);box-shadow:0 4px 14px rgba(0,0,0,.4);display:flex;gap:10px;align-items:center;max-width:92vw}
+#pickHint button{background:#fff;color:#1a73e8;border:none;border-radius:8px;padding:6px 10px;font:700 12.5px var(--f-body)}
 #toast{position:fixed;left:50%;transform:translateX(-50%);top:calc(var(--st) + 120px);z-index:3000;background:rgba(200,55,31,.95);color:#fff;padding:10px 16px;border-radius:12px;font-weight:600;font-size:14px;max-width:90vw;text-align:center;box-shadow:0 6px 20px rgba(0,0,0,.4)}
 #toast.info{background:rgba(31,138,76,.95)}
 
@@ -165,6 +175,7 @@ html,body{height:100%;margin:0;background:var(--navy);color:var(--fg);font-famil
 <button id="searchPill" aria-label="Tìm điểm đến"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#1a73e8" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><span>Đi đến đâu? Tìm điểm đến</span></button>
 <div id="navBan" hidden><div class="arrow" id="navArrow"></div><div style="min-width:0"><b id="navDist">--</b><span id="navText">--</span><span class="then" id="navThen"></span></div></div>
 <div id="navInfo" hidden><div><b id="navRemain">--</b><small id="navEta">--</small></div><div style="display:flex;gap:6px"><button id="navMute" style="background:#2f6fd6">Lộ trình</button><button id="navStop">Kết thúc</button></div></div>
+<div id="pickHint" hidden><span id="pickText">Chạm vào bản đồ để chọn điểm</span><button id="pickCancel">Huỷ</button></div>
 <div id="toast" hidden></div>
 
 <!-- Màn hình bắt đầu -->
@@ -180,8 +191,8 @@ html,body{height:100%;margin:0;background:var(--navy);color:var(--fg);font-famil
 <div class="sheet" id="routeSheet" hidden><div class="box">
   <h3>Chỉ đường</h3>
   <div class="seg" role="group" aria-label="Phương tiện"><button id="vCar">Ô tô</button><button id="vMoto">Xe máy</button></div>
-  <label for="destQ">Điểm đến</label>
-  <input id="destQ" type="search" placeholder="Nhập tên đường, địa điểm, số nhà…" autocomplete="off" enterkeyhint="search">
+  <div id="ptList"></div>
+  <div class="row" style="margin-top:8px"><button class="btn" id="addStop"><b style="font-size:18px">+</b>&nbsp;Thêm điểm dừng</button><button class="btn" id="swapAB">⇅&nbsp;Đổi chiều A, B</button></div>
   <div class="results" id="destResults"></div>
   <div id="routeBox" hidden>
     <div class="routeSum"><b id="rsTime">--</b> · <span id="rsDist">--</span><br><small id="rsTo" style="color:var(--muted)"></small></div>
@@ -695,27 +706,81 @@ $('bSim').onclick = () => {
 };
 
 
-/* ---------- Tìm điểm đến, chỉ đường ---------- */
+/* ---------- Tìm điểm đến, chỉ đường (A, B, điểm dừng) ---------- */
 const VALHALLA = 'https://valhalla1.openstreetmap.de/route';
 const OSRM = 'https://router.project-osrm.org/route/v1/driving/';
-let dest = null, plan = null, nav = null, destMarker = null, rerouteAt = 0, offCount = 0;
+let plan = null, nav = null, rerouteAt = 0, offCount = 0;
+let pts = [{me:true, name:'Vị trí của tôi'}, null];   // A, (điểm dừng…), B
+let ai = 1, ptMarkers = [], pickIdx = -1;
+const LET = i => String.fromCharCode(65 + i);
 function fmtDist(m){ return m >= 1000 ? (m/1000).toFixed(m>=10000?0:1).replace('.', ',') + ' km' : Math.max(10, Math.round(m/10)*10) + ' m'; }
 function fmtTime(s){ const m = Math.round(s/60); return m < 60 ? m + ' phút' : Math.floor(m/60) + ' giờ ' + (m%60) + ' phút'; }
 function sayDist(m){ return m >= 1000 ? (Math.round(m/100)/10).toString().replace('.', ' phẩy ') + ' ki lô mét' : (Math.round(m/50)*50 || 50) + ' mét'; }
 function setVeh(v){ opts.veh = v; LS.set('opts', opts); $('vCar').classList.toggle('on', v==='car'); $('vMoto').classList.toggle('on', v==='moto'); if ($('optVeh')) $('optVeh').value = v; }
-$('vCar').onclick = () => { setVeh('car'); if (dest) planRoute(dest); };
-$('vMoto').onclick = () => { setVeh('moto'); if (dest) planRoute(dest); };
-$('bDest').onclick = () => $('searchPill').onclick();
-$('searchPill').onclick = () => { setVeh(opts.veh); $('routeSheet').hidden = false; setTimeout(()=>$('destQ').focus(), 50); };
-$('routeClose').onclick = () => { $('routeSheet').hidden = true; if (!nav) clearPlan(); };
+const ready = () => pts.every(Boolean);
+function ptLabel(i){ return i===0 ? 'Điểm đi (A)' : i===pts.length-1 ? 'Điểm đến (' + LET(i) + ')' : 'Điểm dừng ' + LET(i); }
+function renderPts(){
+  const box = $('ptList'); box.innerHTML = '';
+  pts.forEach((p, i) => {
+    const row = document.createElement('div'); row.className = 'pt' + (i===ai ? ' active' : '');
+    const cls = i===0 ? 'a' : i===pts.length-1 ? 'b' : '';
+    row.innerHTML = `<span class="lt ${cls}">${LET(i)}</span><input type="search" autocomplete="off" enterkeyhint="search" aria-label="${ptLabel(i)}" placeholder="${ptLabel(i)}: gõ tên đường, địa điểm…"><button title="Chọn trên bản đồ" aria-label="Chọn ${ptLabel(i)} trên bản đồ">📍</button>${pts.length>2 && i>0 && i<pts.length-1 ? '<button title="Bỏ điểm này" aria-label="Bỏ điểm dừng">✕</button>' : ''}`;
+    const inp = row.querySelector('input'); inp.value = p ? p.name : '';
+    inp.onfocus = () => { ai = i; box.querySelectorAll('.pt').forEach((r,k)=>r.classList.toggle('active', k===i)); inp.select(); showSuggest(); };
+    inp.oninput = () => { ai = i; pts[i] = null; clearTimeout(qTimer); qTimer = setTimeout(search, 450); };
+    inp.onkeydown = e => { if (e.key==='Enter'){ clearTimeout(qTimer); search(); } };
+    const bs = row.querySelectorAll('button');
+    bs[0].onclick = () => startPick(i);
+    if (bs[1]) bs[1].onclick = () => { pts.splice(i,1); ai = Math.min(ai, pts.length-1); renderPts(); drawPts(); if (ready()) planRoute(); };
+    box.appendChild(row);
+  });
+}
+function showSuggest(){
+  const box = $('destResults'); box.innerHTML = '';
+  if (pos && !pts.some(p=>p && p.me)){
+    const b = document.createElement('button'); b.innerHTML = '🧭 Vị trí của tôi<small>Dùng vị trí GPS hiện tại</small>';
+    b.onclick = () => choose({me:true, name:'Vị trí của tôi'}); box.appendChild(b);
+  }
+}
+function choose(it){
+  pts[ai] = it; $('destResults').innerHTML = '';
+  const next = pts.findIndex(p=>!p); renderPts(); drawPts();
+  if (next >= 0){ ai = next; renderPts(); setTimeout(()=>{ const ins = $('ptList').querySelectorAll('input'); ins[next] && ins[next].focus(); }, 30); }
+  else planRoute();
+}
+$('vCar').onclick = () => { setVeh('car'); if (ready()) planRoute(); };
+$('vMoto').onclick = () => { setVeh('moto'); if (ready()) planRoute(); };
+$('addStop').onclick = () => { if (pts.length >= 7){ toast('Tối đa 5 điểm dừng'); return; } pts.splice(pts.length-1, 0, null); ai = pts.length-2; renderPts(); setTimeout(()=>{ const ins = $('ptList').querySelectorAll('input'); ins[ai] && ins[ai].focus(); }, 30); };
+$('swapAB').onclick = () => { pts.reverse(); renderPts(); drawPts(); if (ready()) planRoute(); };
+function openRoute(){ setVeh(opts.veh); if (!pts[0] && pos) pts[0] = {me:true, name:'Vị trí của tôi'}; $('routeSheet').hidden = false; renderPts(); if (!nav){ const e = pts.findIndex(p=>!p); if (e>=0){ ai = e; setTimeout(()=>{ const ins = $('ptList').querySelectorAll('input'); ins[e] && ins[e].focus(); }, 60); } } }
+$('bDest').onclick = openRoute;
+$('searchPill').onclick = openRoute;
+$('routeClose').onclick = () => { $('routeSheet').hidden = true; if (!nav && !plan) { drawPts(); } };
+
+// chọn điểm trên bản đồ
+function startPick(i){
+  pickIdx = i; $('routeSheet').hidden = true; $('pickHint').hidden = false;
+  $('pickText').textContent = 'Chạm vào bản đồ để chọn ' + ptLabel(i).replace(/^Đ/, 'đ'); $('searchPill').hidden = true;
+  follow = false; $('recenter').classList.add('off');
+}
+$('pickCancel').onclick = () => { pickIdx = -1; $('pickHint').hidden = true; if (!nav) $('searchPill').hidden = false; $('routeSheet').hidden = false; };
+map.on('click', async e => {
+  if (pickIdx < 0) return;
+  const i = pickIdx; pickIdx = -1; $('pickHint').hidden = true; if (!nav) $('searchPill').hidden = false; clearTimeout(lpT);
+  const it = {lat:e.lngLat.lat, lon:e.lngLat.lng, name:'Điểm chọn trên bản đồ', addr:e.lngLat.lat.toFixed(5)+', '+e.lngLat.lng.toFixed(5)};
+  ai = i; pts[i] = it; drawPts();
+  try{
+    const r = await fetch(`https://photon.komoot.io/reverse?lat=${it.lat}&lon=${it.lon}&limit=1`); const j = await r.json(); const pp = j.features && j.features[0] && j.features[0].properties;
+    if (pp) it.name = pp.name || [pp.housenumber, pp.street].filter(Boolean).join(' ') || it.name, it.addr = [pp.street, pp.district || pp.locality, pp.city].filter(Boolean).join(', ') || it.addr;
+  }catch(err){}
+  $('routeSheet').hidden = false; choose(it);
+});
 
 // Tìm địa điểm (Photon, dự phòng Nominatim), ưu tiên quanh vị trí hiện tại
 let qTimer = null, qSeq = 0;
-$('destQ').addEventListener('input', () => { clearTimeout(qTimer); qTimer = setTimeout(search, 450); });
-$('destQ').addEventListener('keydown', e => { if (e.key==='Enter'){ clearTimeout(qTimer); search(); } });
 async function search(){
-  const q = $('destQ').value.trim(); const box = $('destResults');
-  if (q.length < 2){ box.innerHTML = ''; return; }
+  const inp = $('ptList').querySelectorAll('input')[ai]; const q = inp ? inp.value.trim() : ''; const box = $('destResults');
+  if (q.length < 2){ showSuggest(); return; }
   const seq = ++qSeq; box.innerHTML = '<p>Đang tìm…</p>';
   const c = pos || {lat:map.getCenter().lat, lon:map.getCenter().lng};
   let items = [];
@@ -734,13 +799,13 @@ async function search(){
     }catch(e){}
   }
   if (seq !== qSeq) return;
-  if (!items.length){ box.innerHTML = '<p>Không tìm thấy. Đồng chí thử ghi rõ hơn, ví dụ thêm tên quận, tỉnh.</p>'; return; }
+  if (!items.length){ box.innerHTML = '<p>Không tìm thấy. Đồng chí thử ghi rõ hơn, ví dụ thêm tên quận, tỉnh, hoặc bấm 📍 để chọn trên bản đồ.</p>'; return; }
   box.innerHTML = '';
   items.forEach(it => {
     const b = document.createElement('button');
     const d = pos ? ' · ' + fmtDist(dist(pos, it)) : '';
     b.innerHTML = `${escapeHtml(it.name)}<small>${escapeHtml(it.addr)}${d}</small>`;
-    b.onclick = () => { dest = it; box.innerHTML = ''; $('destQ').value = it.name; planRoute(it); };
+    b.onclick = () => choose(it);
     box.appendChild(b);
   });
 }
@@ -756,45 +821,59 @@ function decode6(str){
 }
 const VTYPE = {1:'Xuất phát',2:'Xuất phát',3:'Xuất phát',4:'Đến nơi',5:'Đến nơi, điểm đến ở bên phải',6:'Đến nơi, điểm đến ở bên trái',7:'Đi tiếp',8:'Đi thẳng',9:'Chếch sang phải',10:'Rẽ phải',11:'Rẽ ngoặt phải',12:'Quay đầu',13:'Quay đầu',14:'Rẽ ngoặt trái',15:'Rẽ trái',16:'Chếch sang trái',17:'Đi thẳng',18:'Đi về bên phải',19:'Đi về bên trái',20:'Ra lối bên phải',21:'Ra lối bên trái',22:'Đi thẳng',23:'Giữ bên phải',24:'Giữ bên trái',25:'Nhập làn',26:'Vào vòng xoay',27:'Ra khỏi vòng xoay',28:'Lên phà',29:'Rời phà',37:'Nhập làn bên phải',38:'Nhập làn bên trái'};
 const VANG = {9:45,10:90,11:135,12:180,13:180,14:-135,15:-90,16:-45,18:30,19:-30,20:40,21:-40,23:20,24:-20,37:20,38:-20};
-function mkText(type, street, exitN){
-  let t = VTYPE[type] || 'Đi tiếp';
-  if (type===26 && exitN) t = 'Vào vòng xoay, ra ở lối thứ ' + exitN;
-  if (street && ![4,5,6].includes(type)) t += (type<=3 ? ' theo ' : ' vào ') + street;
+function mkText(m){
+  if (m.stop) return 'Đến điểm dừng ' + m.stop;
+  let t = VTYPE[m.type] || 'Đi tiếp';
+  if (m.type===26 && m.exitN) t = 'Vào vòng xoay, ra ở lối thứ ' + m.exitN;
+  if (m.street && ![4,5,6].includes(m.type)) t += (m.type<=3 ? ' theo ' : ' vào ') + m.street;
   return t;
 }
-async function fetchValhalla(from, to){
-  const body = {locations:[{lat:from.lat, lon:from.lon, ...(heading!=null && speedKmh>5 ? {heading:Math.round(heading), heading_tolerance:60} : {})},{lat:to.lat, lon:to.lon}],
-    costing: opts.veh==='moto' ? 'motor_scooter' : 'auto', directions_options:{units:'kilometers', language:'en-US'},
+const isArrive = m => [4,5,6].includes(m.type);
+async function fetchValhalla(list, withHeading){
+  const locs = list.map((p,i) => Object.assign({lat:p.lat, lon:p.lon, type: i===0 || i===list.length-1 ? 'break' : 'break'}, i===0 && withHeading && heading!=null && speedKmh>5 ? {heading:Math.round(heading), heading_tolerance:60} : {}));
+  const body = {locations:locs, costing: opts.veh==='moto' ? 'motor_scooter' : 'auto', directions_options:{units:'kilometers', language:'en-US'},
     costing_options: opts.veh==='moto' ? {motor_scooter:{top_speed:60, use_primary:0.6, use_hills:0.5}} : {}};
   const ctl = new AbortController(); const to2 = setTimeout(()=>ctl.abort(), 15000);
   const r = await fetch(VALHALLA + '?json=' + encodeURIComponent(JSON.stringify(body)), {signal:ctl.signal}); clearTimeout(to2);
   const j = await r.json(); if (!j.trip) throw new Error(j.error || 'Không có lộ trình');
-  const leg = j.trip.legs[0]; const coords = decode6(leg.shape);
-  const mans = leg.maneuvers.map(m => ({idx:m.begin_shape_index, type:m.type, street:(m.street_names||[])[0]||'', exitN:m.roundabout_exit_count||0}));
-  return {coords, mans, totalM: j.trip.summary.length*1000, totalS: j.trip.summary.time};
-}
-async function fetchOsrm(from, to){
-  const r = await fetch(`${OSRM}${from.lon},${from.lat};${to.lon},${to.lat}?overview=full&geometries=geojson&steps=true`);
-  const j = await r.json(); if (!j.routes || !j.routes.length) throw new Error('Không có lộ trình');
-  const rt = j.routes[0]; const coords = rt.geometry.coordinates; const mans = [];
-  const modT = {'uturn':12,'sharp right':11,'right':10,'slight right':9,'straight':8,'slight left':16,'left':15,'sharp left':14};
-  rt.legs[0].steps.forEach(st => {
-    const m = st.maneuver; let type = modT[m.modifier] || 8;
-    if (m.type==='depart') type = 1; else if (m.type==='arrive') type = 4; else if (m.type==='roundabout' || m.type==='rotary') type = 26;
-    let best = 0, bd = 1e9; const L0 = {lon:m.location[0], lat:m.location[1]};
-    for (let i=0;i<coords.length;i++){ const d = dist(L0, {lon:coords[i][0], lat:coords[i][1]}); if (d < bd){ bd = d; best = i; } }
-    mans.push({idx:best, type, street:st.name||'', exitN:m.exit||0});
+  let coords = [], mans = [], legEnds = [];
+  j.trip.legs.forEach((leg, li) => {
+    const c = decode6(leg.shape); const off = coords.length ? coords.length - 1 : 0;
+    coords = coords.length ? coords.concat(c.slice(1)) : c;
+    leg.maneuvers.forEach(m => {
+      if (li > 0 && m.type >= 1 && m.type <= 3) return;               // bỏ "xuất phát" ở chặng sau
+      const mm = {idx: m.begin_shape_index + off, type:m.type, street:(m.street_names||[])[0]||'', exitN:m.roundabout_exit_count||0};
+      if (isArrive(mm) && li < j.trip.legs.length-1) mm.stop = LET(li+1);
+      mans.push(mm);
+    });
+    legEnds.push(coords.length-1);
   });
-  return {coords, mans, totalM: rt.distance, totalS: rt.duration * (opts.veh==='moto' ? 1.15 : 1)};
+  return {coords, mans, legEnds, totalM: j.trip.summary.length*1000, totalS: j.trip.summary.time};
 }
-async function getRoute(from, to){
-  try{ return await fetchValhalla(from, to); }catch(e){ return await fetchOsrm(from, to); }
+async function fetchOsrm(list){
+  const r = await fetch(`${OSRM}${list.map(p=>p.lon+','+p.lat).join(';')}?overview=full&geometries=geojson&steps=true`);
+  const j = await r.json(); if (!j.routes || !j.routes.length) throw new Error('Không có lộ trình');
+  const rt = j.routes[0]; const coords = rt.geometry.coordinates; const mans = [], legEnds = [];
+  const modT = {'uturn':12,'sharp right':11,'right':10,'slight right':9,'straight':8,'slight left':16,'left':15,'sharp left':14};
+  const near = L0 => { let best = 0, bd = 1e9; for (let i=0;i<coords.length;i++){ const d = dist(L0, {lon:coords[i][0], lat:coords[i][1]}); if (d < bd){ bd = d; best = i; } } return best; };
+  rt.legs.forEach((leg, li) => leg.steps.forEach(st => {
+    const m = st.maneuver; let type = modT[m.modifier] || 8;
+    if (m.type==='depart'){ if (li>0) return; type = 1; } else if (m.type==='arrive') type = 4; else if (m.type==='roundabout' || m.type==='rotary') type = 26;
+    const mm = {idx:near({lon:m.location[0], lat:m.location[1]}), type, street:st.name||'', exitN:m.exit||0};
+    if (type===4){ legEnds.push(mm.idx); if (li < rt.legs.length-1) mm.stop = LET(li+1); }
+    mans.push(mm);
+  }));
+  return {coords, mans, legEnds, totalM: rt.distance, totalS: rt.duration * (opts.veh==='moto' ? 1.15 : 1)};
+}
+async function getRoute(list, withHeading){
+  try{ return await fetchValhalla(list, withHeading); }catch(e){ return await fetchOsrm(list); }
 }
 function prepRoute(r){
   r.cum = [0];
   for (let i=1;i<r.coords.length;i++) r.cum.push(r.cum[i-1] + dist({lon:r.coords[i-1][0], lat:r.coords[i-1][1]}, {lon:r.coords[i][0], lat:r.coords[i][1]}));
   const geoM = r.cum[r.cum.length-1]; if (geoM > 0 && r.totalM > 0){ r.totalS *= geoM / r.totalM; r.totalM = geoM; }
-  r.mans.forEach(m => { m.text = mkText(m.type, m.street, m.exitN); m.at = r.cum[Math.min(m.idx, r.cum.length-1)]; });
+  r.mans.forEach(m => { m.text = mkText(m); m.at = r.cum[Math.min(m.idx, r.cum.length-1)]; });
+  r.stopAt = (r.legEnds||[]).map(i => r.cum[Math.min(i, r.cum.length-1)]);
   return r;
 }
 function drawRoute(r){
@@ -806,41 +885,47 @@ function drawRoute(r){
     map.addLayer({id:'route', type:'line', source:'route', layout:{'line-cap':'round','line-join':'round'}, paint:{'line-color':'#3b8cff','line-width':['interpolate',['linear'],['zoom'],12,4,18,11]}});
   } else map.getSource('route').setData(data);
 }
-async function planRoute(to){
-  const from = pos || (simTimer ? null : null);
-  if (!from){ toast('Chưa có vị trí GPS. Bấm Bắt đầu hành trình hoặc chờ máy bắt tín hiệu.'); return; }
+function drawPts(){
+  ptMarkers.splice(0).forEach(m=>m.remove());
+  pts.forEach((p,i) => {
+    if (!p || p.me) return;
+    const el = document.createElement('div');
+    if (i === pts.length-1){ el.className = 'destMk'; el.innerHTML = '<svg viewBox="0 0 24 24" width="30" height="30"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z" fill="#e53935" stroke="#fff" stroke-width="1.5"/><text x="12" y="12" text-anchor="middle" font-size="8" font-weight="800" fill="#fff">' + LET(i) + '</text></svg>'; }
+    else { el.className = 'ptMk' + (i===0 ? ' a' : ''); el.textContent = LET(i); }
+    ptMarkers.push(new maplibregl.Marker({element:el, anchor: i===pts.length-1 ? 'bottom' : 'center'}).setLngLat([p.lon, p.lat]).addTo(map));
+  });
+}
+function resolvePts(){ return pts.map(p => p && p.me ? (pos ? {lat:pos.lat, lon:pos.lon, name:'Vị trí của tôi', me:true} : null) : p); }
+async function planRoute(){
+  const list = resolvePts();
+  if (list.some(p=>!p)){ toast(pts.some(p=>p && p.me) && !pos ? 'Chưa có vị trí GPS. Bấm Bắt đầu hành trình hoặc chọn điểm A khác.' : 'Đồng chí chọn đủ các điểm'); return; }
   $('routeBox').hidden = false; $('rsTime').textContent = 'Đang tìm đường…'; $('rsDist').textContent = ''; $('rsSteps').innerHTML = ''; $('routeGo').hidden = true;
-  try{
-    plan = prepRoute(await getRoute(from, to));
-  }catch(e){ $('rsTime').textContent = 'Chưa tìm được đường'; $('rsDist').textContent = 'thử lại sau ít giây'; return; }
+  try{ plan = prepRoute(await getRoute(list, !!list[0].me)); plan.pts = list; }
+  catch(e){ $('rsTime').textContent = 'Chưa tìm được đường'; $('rsDist').textContent = 'thử lại sau ít giây'; return; }
   $('rsTime').textContent = fmtTime(plan.totalS); $('rsDist').textContent = fmtDist(plan.totalM) + (opts.veh==='moto' ? ' · xe máy' : ' · ô tô');
-  $('rsTo').textContent = 'Đến: ' + to.name + (to.addr ? ', ' + to.addr : '');
+  $('rsTo').textContent = list.map((p,i)=>LET(i)+': '+p.name).join('  →  ');
   $('rsSteps').innerHTML = plan.mans.map((m,i) => `<div><span>${escapeHtml(m.text)}</span><span>${i < plan.mans.length-1 ? fmtDist(plan.mans[i+1].at - m.at) : ''}</span></div>`).join('');
   $('routeGo').hidden = false;
-  drawRoute(plan); placeDest(to);
+  drawRoute(plan); drawPts();
   const b = plan.coords.reduce((bb,c)=>[[Math.min(bb[0][0],c[0]),Math.min(bb[0][1],c[1])],[Math.max(bb[1][0],c[0]),Math.max(bb[1][1],c[1])]], [[180,90],[-180,-90]]);
   follow = false; $('recenter').classList.add('off');
   map.fitBounds(b, {padding:{top:150, bottom: Math.round(innerHeight*0.55), left:40, right:40}, pitch:0, bearing:0, duration:700});
 }
-function placeDest(to){
-  if (destMarker) destMarker.remove();
-  const el = document.createElement('div'); el.className = 'destMk';
-  el.innerHTML = '<svg viewBox="0 0 24 24" width="30" height="30"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z" fill="#e53935" stroke="#fff" stroke-width="1.5"/><circle cx="12" cy="9" r="2.6" fill="#fff"/></svg>';
-  destMarker = new maplibregl.Marker({element:el, anchor:'bottom'}).setLngLat([to.lon, to.lat]).addTo(map);
-}
-function clearPlan(){ plan = null; nav = null; dest = null; drawRoute(null); if (destMarker){ destMarker.remove(); destMarker = null; } $('navBan').hidden = true; $('navInfo').hidden = true; $('searchPill').hidden = false; $('routeBox').hidden = true; }
+function clearPlan(){ plan = null; nav = null; pts = [{me:true, name:'Vị trí của tôi'}, null]; ai = 1; drawRoute(null); drawPts(); $('navBan').hidden = true; $('navInfo').hidden = true; $('searchPill').hidden = false; $('routeBox').hidden = true; }
 $('routeGo').onclick = () => startNav();
 function startNav(){
   if (!plan) return;
-  nav = Object.assign(plan, {cur:0, said:{}, dest});
+  nav = Object.assign(plan, {cur:0, said:{}, joined: !!plan.pts[0].me});
   $('routeSheet').hidden = true; $('searchPill').hidden = true; $('navBan').hidden = false; $('navInfo').hidden = false;
   follow = true; $('recenter').classList.remove('off'); if (!is3d){ is3d = true; set3dBtn(); }
   followCam(true); initAudio();
-  speak('Bắt đầu chỉ đường đến ' + (dest ? dest.name : 'điểm đến') + '. Quãng đường ' + sayDist(plan.totalM) + ', khoảng ' + fmtTime(plan.totalS));
+  const last = plan.pts[plan.pts.length-1];
+  speak('Bắt đầu chỉ đường đến ' + last.name + (plan.pts.length > 2 ? ', qua ' + (plan.pts.length-2) + ' điểm dừng' : '') + '. Quãng đường ' + sayDist(plan.totalM) + ', khoảng ' + fmtTime(plan.totalS));
+  if (!nav.joined && pos && dist(pos, plan.pts[0]) > 300) toast('Lộ trình bắt đầu từ điểm A. Khi đồng chí tới gần lộ trình, chỉ đường sẽ tự bám theo.', true);
   navTick();
 }
 $('navStop').onclick = () => { clearPlan(); speak('Đã kết thúc chỉ đường'); };
-$('navMute').onclick = () => { if (nav){ $('routeSheet').hidden = false; $('routeGo').hidden = true; } };
+$('navMute').onclick = () => { if (nav){ $('routeSheet').hidden = false; $('routeGo').hidden = true; renderPts(); } };
 function arrowSvg(type){
   if ([4,5,6].includes(type)) return '<svg viewBox="0 0 24 24" width="40" height="40"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z" fill="#fff"/><circle cx="12" cy="9" r="2.6" fill="#0d6e3f"/></svg>';
   if (type===26 || type===27) return '<svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="#fff" stroke-width="2.6"><circle cx="12" cy="11" r="5"/><path d="M12 22v-6M17 6l3-3M20 3v4M20 3h-4"/></svg>';
@@ -857,10 +942,13 @@ function navTick(){
   const along = nav.cum[best] + Math.min(dist({lon:C[best][0],lat:C[best][1]}, pos), nav.cum[best+1]-nav.cum[best]);
   const remain = Math.max(0, nav.totalM - along);
   // lệch tuyến: tính lại đường
-  if (bd > 55 && pos.acc < 60){ offCount++; } else offCount = 0;
-  if (offCount >= 3 && Date.now() - rerouteAt > 15000 && nav.dest){
-    rerouteAt = Date.now(); offCount = 0; speak('Đang tính lại đường'); const d0 = nav.dest;
-    getRoute(pos, d0).then(r => { plan = prepRoute(r); nav = Object.assign(plan, {cur:0, said:{}, dest:d0}); drawRoute(nav); }).catch(()=>{});
+  if (bd < 40) nav.joined = true;
+  if (bd > 55 && pos.acc < 60 && nav.joined){ offCount++; } else offCount = 0;
+  if (offCount >= 3 && Date.now() - rerouteAt > 15000){
+    rerouteAt = Date.now(); offCount = 0; speak('Đang tính lại đường');
+    const rest = nav.pts.slice(1).filter((p,k) => k === nav.pts.length-2 || (nav.stopAt[k] || 0) > along + 30);
+    const list = [{lat:pos.lat, lon:pos.lon, name:'Vị trí của tôi', me:true}].concat(rest);
+    getRoute(list, true).then(r => { plan = prepRoute(r); plan.pts = list; nav = Object.assign(plan, {cur:0, said:{}, joined:true}); drawRoute(nav); }).catch(()=>{});
   }
   // hướng dẫn kế tiếp
   const ni = nav.mans.findIndex(m => m.at > along + 5);
@@ -874,12 +962,12 @@ function navTick(){
   // đọc hướng dẫn: báo trước (theo tốc độ) và khi sắp tới
   const key = ni + ':' + m.idx, said = nav.said[key] || {};
   const far = Math.max(250, Math.min(800, spd*25));
-  if ([4,5,6].includes(m.type) && remain < 30){ speak('Đã đến nơi. ' + (m.type===5 ? 'Điểm đến ở bên phải' : m.type===6 ? 'Điểm đến ở bên trái' : '')); clearPlan(); toast('Đã đến nơi', true); return; }
+  if (isArrive(m) && !m.stop && remain < 30){ speak('Đã đến nơi. ' + (m.type===5 ? 'Điểm đến ở bên phải' : m.type===6 ? 'Điểm đến ở bên trái' : '')); clearPlan(); toast('Đã đến nơi', true); return; }
   if (!said.far && dm <= far && dm > 90){ said.far = true; speak('Sau ' + sayDist(dm) + ', ' + m.text.toLowerCase()); }
   if (!said.near && dm <= Math.max(40, spd*4)){ said.near = true; speak(m.text + (nx && (nx.at - m.at) < 150 ? ', sau đó ' + nx.text.toLowerCase() : '')); }
   nav.said[key] = said;
 }
-map.on('load', () => { if (plan) drawRoute(plan); });
+map.on('load', () => { if (plan) drawRoute(plan); drawPts(); });
 
 /* ---------- Khởi động ---------- */
 let wakeLock = null;
@@ -900,8 +988,8 @@ function hhmm(d){ return d.toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'
 function setStatus(s){ $('status').textContent = s; }
 let toastT = null;
 function toast(s, info){ const t = $('toast'); t.textContent = s; t.className = info ? 'info' : ''; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(()=>t.hidden=true, 3200); }
-$('clock').textContent = hhmm(new Date()); setSoundBtn(); setStatus('Phiên bản 15/11 (có 3D, chỉ đường). Bấm Bắt đầu hành trình.');
-window.__app = {update, onPos, parseData, drawData, get state(){ return {pos, speedKmh, heading, curLimit, ways:ways.length, cams:cams.length}; }};
+$('clock').textContent = hhmm(new Date()); setSoundBtn(); setStatus('Phiên bản 15/11b (3D, chỉ đường A-B, điểm dừng). Bấm Bắt đầu hành trình.');
+window.__app = {map, update, onPos, parseData, drawData, get state(){ return {pos, speedKmh, heading, curLimit, ways:ways.length, cams:cams.length}; }};
 })();
 </script>
 </body>
