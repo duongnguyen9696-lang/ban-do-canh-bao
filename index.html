@@ -34,8 +34,18 @@ html,body{height:100%;margin:0;background:var(--navy);color:var(--fg);font-famil
 #poiBtn.on{background:#1a73e8;color:#fff}
 .poiMk{width:30px;height:30px;border-radius:50%;background:#fff;border:2px solid #1a73e8;display:grid;place-items:center;font-size:16px;box-shadow:0 2px 6px rgba(0,0,0,.45);cursor:pointer}
 .poiGrid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
-.poiGrid label{display:flex!important;align-items:center;gap:8px;margin:0!important;padding:10px;border:1px solid var(--line);border-radius:10px;background:#0c1d36;color:var(--fg)!important;font-size:13.5px!important}
-.poiGrid input{width:auto}
+.poiGrid label{display:flex!important;align-items:center;gap:8px;margin:0!important;padding:8px 9px;min-width:0;min-height:44px;border:1px solid var(--line);border-radius:10px;background:#0c1d36;color:var(--fg)!important;font-size:13px!important;line-height:1.25}
+.poiGrid label:has(input:checked){border-color:#6aa0ff;background:#17345c}
+.sheet .poiGrid input{width:20px!important;height:20px;flex:none;margin:0;padding:0;accent-color:#1a73e8}
+.poiGrid .pi{font-size:18px;flex:none}
+.poiGrid .pn{min-width:0;overflow-wrap:anywhere}
+.sheetFoot{position:sticky;bottom:calc(-1 * (var(--sb) + 18px));background:#13294a;padding:10px 0 calc(var(--sb) + 4px);margin-top:8px;z-index:2}
+#trafTime{position:fixed;right:max(66px,calc(var(--sr) + 66px));bottom:calc(var(--sb) + 386px);z-index:1000;background:rgba(15,36,66,.9);color:#fff;border-radius:10px;padding:3px 8px;font:600 11px var(--f-body);pointer-events:none;white-space:nowrap}
+#trafTime[hidden]{display:none}
+.ucRow{display:flex;align-items:center;gap:8px}
+.ucRow .ucInfo{flex:1;min-width:0;cursor:pointer}
+.list .ucDel{flex:none;border:none;background:#c8371f;color:#fff;border-radius:9px;padding:8px 14px;font:700 13px var(--f-body)}
+.popBtns button.del{background:#c8371f}
 .popBtns{display:flex;gap:6px;margin-top:8px}
 .popBtns button{flex:1;border:none;border-radius:8px;padding:8px 6px;font:700 12px var(--f-body);color:#fff;background:#1f8a4c;cursor:pointer}
 .popBtns button+button{background:#2f6fd6}
@@ -197,7 +207,8 @@ html,body{height:100%;margin:0;background:var(--navy);color:var(--fg);font-famil
 </div>
 
 <button id="layers" aria-label="Đổi lớp bản đồ" title="Đổi lớp bản đồ"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/></svg></button>
-<button id="trafBtn" aria-label="Lớp kẹt xe" title="Tình trạng giao thông">🚦</button>
+<button id="trafBtn" aria-label="Lớp kẹt xe" title="Tình trạng giao thông (bấm giữ để cập nhật ngay)">🚦</button>
+<div id="trafTime" hidden></div>
 <button id="poiBtn" aria-label="Địa điểm gần đây" title="Ngân hàng, cây xăng, quán ăn gần đây">🏪</button>
 <button id="mode3d" aria-label="Đổi 2D hoặc 3D" title="Đổi 2D, 3D">3D</button>
 <button id="recenter" aria-label="Về vị trí của tôi" title="Bám theo vị trí"><svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor"><path d="M12 2 4.5 20.3l.7.7L12 18l6.8 3 .7-.7z"/></svg></button>
@@ -256,14 +267,28 @@ html,body{height:100%;margin:0;background:var(--navy);color:var(--fg);font-famil
   <div class="row" id="gmTrafRow" hidden><button class="btn" id="gmTraf">🚦 Xem kẹt xe, tai nạn trên Google Maps</button></div>
 </div></div>
 
+<!-- Giao thông trực tiếp -->
+<div class="sheet" id="trafSheet" hidden><div class="box">
+  <h3>🚦 Tình hình giao thông trực tiếp</h3>
+  <p>Hiện kẹt xe ngay trên bản đồ của ứng dụng (xanh thông thoáng, vàng đông, đỏ kẹt), tự cập nhật 5 phút một lần khi đang mở ứng dụng. Cần mã TomTom miễn phí, dán một lần là dùng mãi.</p>
+  <label for="trafKey">Mã TomTom API</label>
+  <input id="trafKey" type="text" autocomplete="off" placeholder="Dán mã TomTom vào đây">
+  <div class="row"><a class="btn" href="https://developer.tomtom.com/user/register" target="_blank" rel="noopener" style="text-align:center;text-decoration:none">Lấy mã TomTom (miễn phí)</a><button class="btn primary" id="trafKeyOk">Lưu và bật</button></div>
+  <p style="font-size:11.5px">Cách lấy: bấm “Lấy mã TomTom”, đăng ký bằng email, mở thư xác nhận, vào mục Keys, sao chép mã “My first API key”, quay lại dán vào ô trên.</p>
+  <div class="row sheetFoot"><button class="btn" id="trafGm">Xem tạm trên Google Maps</button><button class="btn" id="trafClose">Đóng</button></div>
+</div></div>
+
 <!-- Địa điểm gần đây -->
 <div class="sheet" id="poiSheet" hidden><div class="box">
   <h3>Gần đây</h3>
-  <p>Tích vào loại địa điểm muốn hiện trên bản đồ. Bỏ tích để ẩn cho bản đồ đỡ rối.</p>
+<details class="grp" id="poiGrpType" open><summary>🏪 Loại địa điểm (<span id="poiSel">0</span> đã chọn)</summary><div class="gb">
+  <p style="font-size:12px;margin-top:0">Tích loại muốn hiện trên bản đồ, bỏ tích để ẩn.</p>
   <div class="poiGrid" id="poiGrid"></div>
-  <div class="row"><button class="btn" id="poiNone">Ẩn tất cả</button><button class="btn primary" id="poiClose">Xong</button></div>
-  <h3 style="margin-top:16px">Gần nhất</h3>
+</div></details>
+<details class="grp" id="poiGrpNear"><summary>📍 Gần nhất</summary><div class="gb">
   <div class="results" id="poiNear"><p>Chưa chọn loại địa điểm nào.</p></div>
+</div></details>
+  <div class="row sheetFoot"><button class="btn" id="poiNone">Ẩn tất cả</button><button class="btn primary" id="poiClose">Xong</button></div>
 </div></div>
 
 <!-- Báo camera -->
@@ -617,7 +642,10 @@ function drawData(){
   const src = map.getSource && map.getSource('roads'); if (src) src.setData({type:'FeatureCollection', features:feats});
   camMarkers.splice(0).forEach(m=>m.remove());
   allCams().forEach(c => {
-    const pop = new maplibregl.Popup({offset:16, closeButton:false}).setHTML(`<b>${CAM_LABEL[c.type]||'Camera'}</b>${c.limit?'<br>Giới hạn: '+c.limit+' km/h':''}${c.note?'<br>'+escapeHtml(c.note):''}<br><small>${c.src==='user'?'Đồng chí tự báo':c.src==='sim'?'Camera giả lập':'Nguồn OpenStreetMap'}</small>`);
+    const pel = document.createElement('div');
+    pel.innerHTML = `<b>${CAM_LABEL[c.type]||'Camera'}</b>${c.limit?'<br>Giới hạn: '+c.limit+' km/h':''}${c.note?'<br>'+escapeHtml(c.note):''}<br><small>${c.src==='user'?'Đồng chí tự báo':c.src==='sim'?'Camera giả lập':'Nguồn OpenStreetMap'}</small>${c.src==='user'?'<div class="popBtns"><button class="del">Bỏ camera này</button></div>':''}`;
+    const pop = new maplibregl.Popup({offset:16, closeButton:c.src==='user'}).setDOMContent(pel);
+    if (c.src==='user'){ const uc = userCams.find(x=>x.id===c.id); pel.querySelector('button').onclick = () => { if (uc && removeUserCam(uc)) pop.remove(); }; }
     camMarkers.push(new maplibregl.Marker({element:camEl(c)}).setLngLat([c.lon,c.lat]).setPopup(pop).addTo(map));
   });
 }
@@ -812,13 +840,20 @@ $('optGoong').onchange = () => { opts.goong = $('optGoong').value.trim(); LS.set
 function renderUserList(){
   $('userCount').textContent = userCams.length;
   $('userList').innerHTML = userCams.length ? '' : '<p>Chưa có điểm nào. Bấm “Báo camera” khi đi qua camera để lưu lại.</p>';
-  userCams.slice().reverse().forEach(c => {
-    const d = document.createElement('div');
-    d.innerHTML = `<span>${CAM_LABEL[c.type]||'Camera'}${c.limit?' · '+c.limit+' km/h':''}<br><small style="color:var(--muted)">${escapeHtml(c.note||'')} ${c.lat.toFixed(4)}, ${c.lon.toFixed(4)}</small></span>`;
-    const b = document.createElement('button'); b.textContent = 'Xoá';
-    b.onclick = () => { userCams = userCams.filter(x=>x.id!==c.id); LS.set('userCams', userCams); renderUserList(); drawData(); };
+  const ref = pos || {lat:map.getCenter().lat, lon:map.getCenter().lng};
+  userCams.slice().sort((a,b)=>dist(ref,a)-dist(ref,b)).forEach(c => {
+    const d = document.createElement('div'); d.className = 'ucRow';
+    d.innerHTML = `<span class="ucInfo"><b>${CAM_LABEL[c.type]||'Camera'}</b>${c.limit?' · '+c.limit+' km/h':''}<br><small style="color:var(--muted)">Cách ${fmtDist(dist(ref,c))}${c.note?' · '+escapeHtml(c.note):''}</small></span>`;
+    d.querySelector('.ucInfo').onclick = () => { $('menuSheet').hidden = true; follow = false; $('recenter').classList.add('off'); map.flyTo({center:[c.lon,c.lat], zoom:17, duration:700}); };
+    const b = document.createElement('button'); b.className = 'ucDel'; b.textContent = 'Bỏ';
+    b.onclick = () => removeUserCam(c);
     d.appendChild(b); $('userList').appendChild(d);
   });
+}
+function removeUserCam(c){
+  if (!confirm('Bỏ điểm ' + (CAM_LABEL[c.type]||'camera').toLowerCase() + ' này? Ứng dụng sẽ không cảnh báo tại điểm này nữa.')) return false;
+  userCams = userCams.filter(x=>x.id!==c.id); LS.set('userCams', userCams); renderUserList(); drawData(); update();
+  toast('Đã bỏ điểm camera tự báo', true); return true;
 }
 $('bMenu').onclick = () => { $('optVeh').value=opts.veh; $('optWarn').value=opts.warn; $('optTol').value=opts.tol; $('optArea').value=opts.area; $('optBanTurn').checked=opts.banTurn!==false; $('optBanPark').checked=opts.banPark!==false; $('optGoong').value=opts.goong||''; $('optTomtom').value=opts.tomtom||''; $('optTrafWarn').checked=opts.trafWarn!==false; renderPlaces(); loadVoices(); $('optRate').value=opts.rate||1; $('optVol').value=opts.vol==null?1:opts.vol; showVoiceVals(); renderUserList(); $('menuSheet').hidden = false; };
 $('menuClose').onclick = () => { $('menuSheet').hidden = true; };
@@ -1236,13 +1271,14 @@ const POI = {
 let poiOn = (opts.poi || []).filter(k => POI[k]), poiData = [], poiMarkers = [], poiCenter = null, poiLoading = false;
 function setPoiBtn(){ $('poiBtn').classList.toggle('on', poiOn.length > 0); }
 function renderPoiGrid(){
-  $('poiGrid').innerHTML = Object.entries(POI).map(([k,v]) => `<label><input type="checkbox" data-k="${k}" ${poiOn.includes(k)?'checked':''}> ${v.ico} ${v.name}</label>`).join('');
+  $('poiGrid').innerHTML = Object.entries(POI).map(([k,v]) => `<label><input type="checkbox" data-k="${k}" ${poiOn.includes(k)?'checked':''}><span class="pi">${v.ico}</span><span class="pn">${v.name}</span></label>`).join('');
+  $('poiSel').textContent = poiOn.length;
   $('poiGrid').querySelectorAll('input').forEach(cb => cb.onchange = () => {
-    poiOn = [...$('poiGrid').querySelectorAll('input:checked')].map(x=>x.dataset.k); opts.poi = poiOn; LS.set('opts', opts); setPoiBtn();
+    poiOn = [...$('poiGrid').querySelectorAll('input:checked')].map(x=>x.dataset.k); opts.poi = poiOn; LS.set('opts', opts); setPoiBtn(); $('poiSel').textContent = poiOn.length; if (poiOn.length) $('poiGrpNear').open = true;
     if (poiOn.length) loadPoi(true); else { poiData = []; drawPoi(); }
   });
 }
-$('poiBtn').onclick = () => { renderPoiGrid(); renderPoiNear(); $('poiSheet').hidden = false; };
+$('poiBtn').onclick = () => { renderPoiGrid(); renderPoiNear(); $('poiGrpNear').open = poiOn.length > 0; $('poiSheet').hidden = false; };
 $('poiClose').onclick = () => $('poiSheet').hidden = true;
 $('poiNone').onclick = () => { poiOn = []; opts.poi = []; LS.set('opts', opts); poiData = []; drawPoi(); renderPoiGrid(); setPoiBtn(); toast('Đã ẩn tất cả địa điểm', true); };
 function poiCat(t){
@@ -1375,14 +1411,30 @@ const TT = 'https://api.tomtom.com';
 let trafOn = opts.traffic !== false, incOnRoute = [], incMarkers = [], incSaid = {}, trafCheckAt = 0, altRoute = null, trafBusy = false;
 const INC = {0:['⚠️','Sự cố'],1:['💥','Tai nạn'],2:['🌫️','Sương mù'],3:['⚠️','Đường nguy hiểm'],4:['🌧️','Mưa lớn'],5:['🧊','Đường trơn'],6:['🚗','Kẹt xe'],7:['🚧','Thu hẹp làn'],8:['⛔','Cấm đường'],9:['🚧','Thi công'],10:['💨','Gió mạnh'],11:['🌊','Ngập nước'],14:['🛻','Xe hỏng']};
 function setTrafBtn(){ $('trafBtn').classList.toggle('on', !!opts.tomtom && trafOn); $('trafBtn').style.opacity = opts.tomtom ? '' : '1'; }
+const TRAF_EVERY = 5*60*1000; let trafAt = 0;
+function trafUrl(){ return `${TT}/traffic/map/4/tile/flow/relative0/{z}/{x}/{y}.png?key=${encodeURIComponent(opts.tomtom)}&tileSize=256&thickness=8&t=${trafAt}`; }
+function showTrafTime(){ const on = !!opts.tomtom && trafOn && trafAt; $('trafTime').hidden = !on; if (on) $('trafTime').textContent = 'Giao thông ' + hhmm(new Date(trafAt)); }
+function refreshTraffic(manual){
+  if (!opts.tomtom || !trafOn) return;
+  if (document.visibilityState !== 'visible' && !manual) return;
+  trafAt = Date.now();
+  const src = styleReady && map.getSource('traffic');
+  if (src && src.setTiles) src.setTiles([trafUrl()]); else applyTraffic();
+  showTrafTime(); loadIncidents();
+  if (manual) toast('Đã cập nhật tình hình giao thông lúc ' + hhmm(new Date(trafAt)), true);
+}
+setInterval(() => { if (opts.tomtom && trafOn && Date.now() - trafAt >= TRAF_EVERY) refreshTraffic(false); }, 30000);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState==='visible' && opts.tomtom && trafOn && Date.now() - trafAt >= TRAF_EVERY) refreshTraffic(false); });
 function applyTraffic(){
   if (!styleReady) return;
   const want = !!opts.tomtom && trafOn;
+  if (want && !trafAt) trafAt = Date.now();
+  showTrafTime();
   if (map.getLayer('traffic')) map.removeLayer('traffic');
   if (map.getSource('traffic')) map.removeSource('traffic');
   if (!want) return;
   try{
-    map.addSource('traffic', {type:'raster', tiles:[`${TT}/traffic/map/4/tile/flow/relative0/{z}/{x}/{y}.png?key=${encodeURIComponent(opts.tomtom)}&tileSize=256&thickness=8`], tileSize:256, maxzoom:20});
+    map.addSource('traffic', {type:'raster', tiles:[trafUrl()], tileSize:256, maxzoom:20});
     map.addLayer({id:'traffic', type:'raster', source:'traffic', paint:{'raster-opacity':0.9,'raster-fade-duration':0}}, map.getLayer('route-case') ? 'route-case' : undefined);
   }catch(e){}
 }
@@ -1395,12 +1447,24 @@ function gmTraffic(){
   window.open(u, '_blank');
 }
 $('gmTraf').onclick = gmTraffic;
+let trafHold = null, trafHeld = false;
+$('trafBtn').addEventListener('pointerdown', () => { trafHeld = false; clearTimeout(trafHold); trafHold = setTimeout(() => { if (opts.tomtom && trafOn){ trafHeld = true; refreshTraffic(true); } }, 650); });
+['pointerup','pointerleave','pointercancel'].forEach(ev => $('trafBtn').addEventListener(ev, () => clearTimeout(trafHold)));
 $('trafBtn').onclick = () => {
-  if (!opts.tomtom){ toast('Đang mở Google Maps có lớp kẹt xe trực tiếp. Muốn cảnh báo ngay trong ứng dụng thì gửi mã TomTom cho tôi.', true); setTimeout(gmTraffic, 600); return; }
-  trafOn = !trafOn; opts.traffic = trafOn; LS.set('opts', opts); setTrafBtn(); applyTraffic(); toast(trafOn ? 'Đã bật lớp kẹt xe: xanh thông thoáng, vàng đông, đỏ kẹt' : 'Đã tắt lớp kẹt xe', true);
-  if (trafOn) loadIncidents();
+  if (trafHeld){ trafHeld = false; return; }
+  if (!opts.tomtom){ $('trafKey').value = ''; $('trafSheet').hidden = false; return; }
+  trafOn = !trafOn; opts.traffic = trafOn; LS.set('opts', opts); setTrafBtn();
+  if (trafOn){ trafAt = 0; applyTraffic(); refreshTraffic(false); } else applyTraffic();
+  toast(trafOn ? 'Đã bật lớp kẹt xe, tự cập nhật 5 phút một lần. Bấm giữ nút 🚦 để cập nhật ngay.' : 'Đã tắt lớp kẹt xe', true);
 };
-$('optTomtom').onchange = () => { opts.tomtom = $('optTomtom').value.trim(); LS.set('opts', opts); setTrafBtn(); applyTraffic(); toast(opts.tomtom ? 'Đã lưu mã TomTom: chỉ đường sẽ tính kẹt xe, tai nạn' : 'Đã bỏ mã TomTom', true); if (opts.tomtom) loadIncidents(); };
+$('trafKeyOk').onclick = () => {
+  const k = $('trafKey').value.trim(); if (!k){ toast('Chưa dán mã TomTom'); return; }
+  opts.tomtom = k; trafOn = true; opts.traffic = true; LS.set('opts', opts); $('trafSheet').hidden = true; setTrafBtn(); trafAt = 0; applyTraffic(); refreshTraffic(false);
+  toast('Đã lưu mã TomTom và bật lớp kẹt xe, tự cập nhật 5 phút một lần', true);
+};
+$('trafGm').onclick = () => { $('trafSheet').hidden = true; gmTraffic(); };
+$('trafClose').onclick = () => $('trafSheet').hidden = true;
+$('optTomtom').onchange = () => { opts.tomtom = $('optTomtom').value.trim(); LS.set('opts', opts); setTrafBtn(); trafAt = 0; applyTraffic(); toast(opts.tomtom ? 'Đã lưu mã TomTom: chỉ đường sẽ tính kẹt xe, tai nạn' : 'Đã bỏ mã TomTom', true); if (opts.tomtom) loadIncidents(); };
 $('optTrafWarn').onchange = () => { opts.trafWarn = $('optTrafWarn').checked; LS.set('opts', opts); };
 const TT_MAN = {TURN_LEFT:15,TURN_RIGHT:10,BEAR_LEFT:16,BEAR_RIGHT:9,KEEP_LEFT:24,KEEP_RIGHT:23,SHARP_LEFT:14,SHARP_RIGHT:11,MAKE_UTURN:12,TRY_MAKE_UTURN:12,STRAIGHT:8,
   ENTER_MOTORWAY:25,ENTER_FREEWAY:25,ENTER_HIGHWAY:25,TAKE_EXIT:20,MOTORWAY_EXIT_LEFT:21,MOTORWAY_EXIT_RIGHT:20,TAKE_FERRY:28,DEPART:1,ARRIVE:4,ARRIVE_LEFT:6,ARRIVE_RIGHT:5,WAYPOINT_REACHED:4,WAYPOINT_LEFT:4,WAYPOINT_RIGHT:4,
@@ -1542,7 +1606,7 @@ function hhmm(d){ return d.toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'
 function setStatus(s){ $('status').textContent = s; }
 let toastT = null;
 function toast(s, info){ const t = $('toast'); t.textContent = s; t.className = info ? 'info' : ''; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(()=>t.hidden=true, 3200); }
-$('clock').textContent = hhmm(new Date()); setSoundBtn(); setStatus('Phiên bản 15/11g (ghim kéo xem địa chỉ, kẹt xe, bong bóng tìm kiếm). Bấm Bắt đầu hành trình.');
+$('clock').textContent = hhmm(new Date()); setSoundBtn(); setStatus('Phiên bản 15/11h (kẹt xe tự cập nhật 5 phút, bỏ camera tự báo, gọn bảng Gần đây). Bấm Bắt đầu hành trình.');
 window.__app = {map, update, onPos, parseData, drawData, get state(){ return {pos, speedKmh, heading, curLimit, ways:ways.length, cams:cams.length}; }};
 })();
 </script>
